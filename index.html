@@ -9,9 +9,10 @@
     <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;700;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
     <!-- Firebase SDKs -->
-    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
     <script src="js/firebase-config.js"></script>
+    <script src="js/student-login.js"></script>
     <style>
         .welcome-wrapper {
             display: flex;
@@ -27,23 +28,130 @@
         .circle { position: absolute; border-radius: 50%; opacity: 0.1; z-index: 0; pointer-events: none; }
         .circle-1 { width: 300px; height: 300px; background: white; top: -50px; left: -50px; }
         .circle-2 { width: 500px; height: 500px; background: var(--accent); bottom: -100px; right: -100px; }
-        .header-content { text-align: center; color: white; z-index: 1; margin-bottom: 60px; animation: fadeInDown 0.8s ease-out; }
-        .main-title { font-size: 4rem; font-weight: 900; margin: 0; letter-spacing: 2px; text-shadow: 0 4px 15px rgba(0,0,0,0.2); }
-        .sub-title { font-size: 1.3rem; margin-top: 15px; opacity: 0.9; font-weight: 300; max-width: 600px; line-height: 1.5; }
-        .cards-container { display: flex; gap: 50px; z-index: 1; animation: fadeInUp 0.8s ease-out 0.2s backwards; }
-        .welcome-card { background: rgba(255, 255, 255, 0.95); border: 1px solid rgba(255, 255, 255, 0.5); border-radius: 24px; width: 300px; height: 380px; display: flex; flex-direction: column; align-items: center; justify-content: center; transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); cursor: pointer; text-decoration: none; color: var(--primary); padding: 40px 30px; text-align: center; box-shadow: 0 15px 35px rgba(0,0,0,0.15); position: relative; overflow: hidden; }
-        .welcome-card::before { content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(to bottom, rgba(52, 152, 219, 0.1), transparent); opacity: 0; transition: opacity 0.3s; }
-        .welcome-card:hover { transform: translateY(-15px) scale(1.02); box-shadow: 0 25px 50px rgba(0,0,0,0.25); border-color: var(--accent); }
-        .welcome-card:hover::before { opacity: 1; }
-        .card-icon-wrapper { background: #f4f6f8; width: 110px; height: 110px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-bottom: 30px; transition: all 0.5s; box-shadow: inset 0 0 15px rgba(0,0,0,0.05); }
-        .welcome-card:hover .card-icon-wrapper { background: var(--accent); color: white; transform: rotateY(180deg); }
-        .card-icon { font-size: 3.5rem; transition: transform 0.5s; }
-        .welcome-card:hover .card-icon { transform: rotateY(-180deg); }
-        .card-title { font-size: 1.8rem; font-weight: 700; margin-bottom: 15px; color: var(--primary); }
-        .card-desc { font-size: 1rem; color: #7f8c8d; line-height: 1.6; }
-        @keyframes fadeInDown { from { opacity: 0; transform: translateY(-30px); } to { opacity: 1; transform: translateY(0); } }
-        @keyframes fadeInUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
-        @media (max-width: 768px) { .cards-container { flex-direction: column; gap: 30px; width: 100%; align-items: center; } .welcome-card { width: 85%; height: auto; padding: 30px; } .main-title { font-size: 2.8rem; } .header-content { margin-bottom: 40px; } }
+        .header-content { text-align: center; color: white; z-index: 1; margin-bottom: 40px; animation: fadeInDown 0.8s ease-out; }
+        .main-title { font-size: 3.5rem; font-weight: 900; margin: 0; letter-spacing: 2px; text-shadow: 0 4px 15px rgba(0,0,0,0.2); }
+        .sub-title { font-size: 1.2rem; margin-top: 15px; opacity: 0.9; font-weight: 300; max-width: 600px; line-height: 1.5; }
+        
+        /* Login Form Styling */
+        .student-login-section {
+            background: rgba(255, 255, 255, 0.98);
+            padding: 30px 40px;
+            border-radius: 20px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.15);
+            width: 100%;
+            max-width: 450px;
+            z-index: 1;
+            margin-bottom: 40px;
+            animation: fadeInUp 0.8s ease-out 0.2s backwards;
+        }
+        .student-login-section h2 {
+            text-align: center;
+            color: var(--primary);
+            font-size: 1.8rem;
+            margin-bottom: 25px;
+            font-weight: 700;
+        }
+        .login-form-group {
+            margin-bottom: 20px;
+        }
+        .login-form-group label {
+            display: block;
+            color: #555;
+            margin-bottom: 8px;
+            font-weight: 500;
+        }
+        .login-form-group input {
+            width: 100%;
+            padding: 12px 15px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: border-color 0.3s, box-shadow 0.3s;
+            text-align: right;
+        }
+        .login-form-group input:focus {
+            outline: none;
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.2);
+        }
+        .student-login-section button {
+            width: 100%;
+            padding: 15px;
+            background: var(--accent);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1.1rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: background-color 0.3s, transform 0.2s;
+        }
+        .student-login-section button:hover {
+            background-color: #3498db;
+            transform: translateY(-2px);
+        }
+        .student-login-section button:disabled {
+            background-color: #95a5a6;
+            cursor: not-allowed;
+        }
+        .teacher-area-link {
+            text-align: center;
+            margin-top: 30px;
+            color: white;
+            text-decoration: none;
+            font-weight: 500;
+            transition: color 0.3s;
+        }
+        .teacher-area-link a {
+            color: white;
+            font-weight: 700;
+        }
+        .teacher-area-link a:hover { text-decoration: underline; }
+
+        @media (max-width: 768px) {
+            .main-title { font-size: 2.5rem; }
+            .header-content { margin-bottom: 30px; }
+            .student-login-section { padding: 25px 30px; }
+        }
+
+        /* Feedback Styles */
+        .spinner {
+            border: 4px solid rgba(0, 0, 0, 0.1);
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            border-left-color: var(--accent);
+            animation: spin 1s ease infinite;
+            display: inline-block;
+            vertical-align: middle;
+            margin-left: 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .login-feedback-message {
+            padding: 10px;
+            margin-bottom: 15px;
+            border-radius: 8px;
+            text-align: center;
+            font-weight: 500;
+            display: none; /* Hidden by default */
+        }
+
+        .login-feedback-message.error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .login-feedback-message.success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
     </style>
 </head>
 <body>
@@ -52,19 +160,27 @@
         <div class="circle circle-2"></div>
         <div class="header-content">
             <h1 class="main-title">EXAMBUILDER 4.0</h1>
-            <div class="sub-title">המערכת המתקדמת והידידותית ליצירה, ניהול והפצה של מבחני בגרות דיגיטליים</div>
+            <p class="sub-title">הדרך הקלה והמהירה לגשת למבחנים דיגיטליים</p>
         </div>
-        <div class="cards-container">
-            <a href="editor.html" class="welcome-card">
-                <div class="card-icon-wrapper"><div class="card-icon">✏️</div></div>
-                <div class="card-title">יצירת מבחן</div>
-                <div class="card-desc">כלי למורים: עורך מתקדם ליצירה, עריכה והפצה של מבחנים חדשים בקלות ובמהירות.</div>
-            </a>
-            <a href="archive.html" class="welcome-card">
-                <div class="card-icon-wrapper"><div class="card-icon">📚</div></div>
-                <div class="card-title">ארכיון מבחנים</div>
-                <div class="card-desc">לתלמידים ולתרגול: גישה מהירה ונוחה למאגר המבחנים לפי שנים ונושאים.</div>
-            </a>
+
+        <div class="student-login-section">
+            <h2>כניסת תלמידים</h2>
+            <form id="student-login-form">
+                <div id="login-feedback" class="login-feedback-message"></div>
+                <div class="login-form-group">
+                    <label for="exam-code-input">קוד מבחן</label>
+                    <input type="text" id="exam-code-input" placeholder="הזן את קוד המבחן שקיבלת" required>
+                </div>
+                <div class="login-form-group">
+                    <label for="student-id-input">מספר ת.ז.</label>
+                    <input type="text" id="student-id-input" placeholder="הזן 9 ספרות" required>
+                </div>
+                <button type="submit">כניסה למבחן</button>
+            </form>
+        </div>
+
+        <div class="teacher-area-link">
+            <a href="editor.html">כניסת מורים ✏️</a>
         </div>
     </div>
 </body>

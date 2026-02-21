@@ -4,10 +4,10 @@ const App = {
         
         if(ExamState.parts.length === 0) {
             this.addPart();
+        } else {
+            UI.renderTabs();
+            this.setTab(ExamState.parts[0].id);
         }
-        
-        UI.renderTabs();
-        this.setTab(ExamState.parts[0].id);
         
         if(UI.elements.examTitleInput) UI.elements.examTitleInput.value = ExamState.examTitle;
         if(UI.elements.previewExamTitle) UI.elements.previewExamTitle.textContent = ExamState.examTitle;
@@ -28,9 +28,14 @@ const App = {
     },
 
     addNewQuestionToCurrentPart: function() {
+        const currentPart = ExamState.getCurrentPart();
+        if (!currentPart) {
+            UI.showToast('יש לבחור פרק תחילה', 'error');
+            return;
+        }
         const question = {
             id: Date.now(),
-            part: ExamState.currentTab,
+            part: currentPart.id,
             points: 10,
             text: '',
             modelAnswer: '',
@@ -131,8 +136,11 @@ const App = {
     },
 
     updatePartNameInternal: function(value) {
-        ExamState.updatePartName(ExamState.currentTab, value);
-        UI.renderTabs(); 
+        const currentPart = ExamState.getCurrentPart();
+        if (currentPart) {
+            ExamState.updatePartName(currentPart.id, value);
+            UI.renderTabs(); 
+        }
     },
 
     removePart: function() {
@@ -140,16 +148,26 @@ const App = {
             UI.showToast('חייב להישאר לפחות פרק אחד.', 'error');
             return;
         }
+        const currentPart = ExamState.getCurrentPart();
+        if(!currentPart) return;
+
         UI.showConfirm('מחיקת פרק', 'האם למחוק את הפרק הנוכחי? כל השאלות בפרק יימחקו.', () => {
-            ExamState.removePart(ExamState.currentTab);
-            if (ExamState.parts.length > 0) this.setTab(ExamState.parts[0].id);
-            else this.addPart();
+            ExamState.removePart(currentPart.id);
+            const newTabId = ExamState.parts[0]?.id;
+            if (newTabId) {
+                this.setTab(newTabId);
+            } else {
+                this.addPart();
+            }
             UI.updateStats();
         });
     },
 
     updatePartInstructionsFromPreview: function(value) {
-        ExamState.instructions.parts[ExamState.currentTab] = value;
+        const currentPart = ExamState.getCurrentPart();
+        if (currentPart) {
+            ExamState.instructions.parts[currentPart.id] = value;
+        }
     },
 
     updateExamTitle: function() {
@@ -165,7 +183,7 @@ const App = {
     saveProject: function() {
         try {
             const projectData = {
-                state: ExamState,
+                state: ExamState.getSavableState(),
                 meta: {
                     duration: UI.elements.examDurationInput?.value || 90,
                     unlockCode: UI.elements.unlockCodeInput?.value || '',
@@ -196,7 +214,7 @@ const App = {
         const file = event.target.files[0];
         if (!file) return;
         const reader = new FileReader();
-        reader.onload = function(e) {
+        reader.onload = (e) => {
             try {
                 let loaded;
                 if (file.name.endsWith('.html')) {
@@ -212,15 +230,7 @@ const App = {
                     loaded = JSON.parse(e.target.result);
                 }
                 
-                ExamState.questions = loaded.state.questions || [];
-                ExamState.parts = loaded.state.parts || [];
-                ExamState.currentTab = loaded.state.parts[0]?.id || 'A';
-                ExamState.examTitle = loaded.state.examTitle || 'מבחן בגרות';
-                ExamState.logoData = loaded.state.logoData;
-                ExamState.instructions = loaded.state.instructions || { general: '', parts: {} };
-                if (loaded.state.theme) {
-                    ExamState.theme = loaded.state.theme;
-                }
+                ExamState.loadState(loaded.state);
 
                 if (loaded.meta) {
                     if (UI.elements.examDurationInput) UI.elements.examDurationInput.value = loaded.meta.duration || 90;
@@ -240,12 +250,10 @@ const App = {
                 
                 if (UI.elements.bgColorInput) UI.elements.bgColorInput.value = ExamState.theme.background;
                 if (UI.elements.headerColorInput) UI.elements.headerColorInput.value = ExamState.theme.header;
-                UI.applyTheme();
-
-                UI.renderTabs();
-                App.setTab(ExamState.currentTab);
-                UI.updateStats();
+                
+                this.init(); // Re-initialize the app with the new state
                 UI.showToast('המבחן נטען בהצלחה!');
+
             } catch (err) {
                 console.error(err);
                 UI.showToast('שגיאה בטעינת הקובץ: ' + err.message, 'error');
@@ -292,7 +300,7 @@ const App = {
 
         const examData = {
             title: ExamState.examTitle,
-            examState: ExamState,
+            examState: ExamState.getSavableState(),
             allowedIds: ExamState.allowedIds,
             createdAt: new Date()
         };
