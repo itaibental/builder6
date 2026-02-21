@@ -1,3 +1,8 @@
+הוספתי את אפשרות ההזנה הידנית ישירות לתוך הפאנל של "ניהול תלמידים". עכשיו יש לך 3 אפשרויות להוספת תלמידים: קובץ אקסל, קישור מ-Google Sheets, או הקלדה ידנית מהירה של שם ותעודת זהות.
+
+להלן הקובץ **`admin_dashboard.html`** המעודכן במלואו. העתק והדבק אותו במקום הקובץ הקיים:
+
+```html
 <!DOCTYPE html>
 <html lang="he" dir="rtl">
 <head>
@@ -11,12 +16,17 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
         body { background: #f4f6f8; overflow: hidden; display: flex; flex-direction: column; height: 100vh; }
-        .admin-layout { display: grid; grid-template-columns: 350px 1fr; gap: 20px; padding: 20px; flex: 1; overflow: hidden; }
+        .admin-layout { display: grid; grid-template-columns: 400px 1fr; gap: 20px; padding: 20px; flex: 1; overflow: hidden; }
         .panel { background: white; border-radius: 12px; display: flex; flex-direction: column; box-shadow: var(--shadow); overflow: hidden; }
         .panel-header { padding: 15px 20px; border-bottom: 1px solid #eee; background: #fafafa; font-weight: bold; font-size: 1.1rem; color: var(--primary); display: flex; align-items: center; gap: 10px; }
         .panel-body { padding: 20px; overflow-y: auto; flex: 1; }
-        .file-drop-area { border: 2px dashed #bdc3c7; border-radius: 8px; padding: 30px; text-align: center; background: #fcfcfc; transition: all 0.2s; margin-bottom: 15px; }
+        .file-drop-area { border: 2px dashed #bdc3c7; border-radius: 8px; padding: 20px; text-align: center; background: #fcfcfc; transition: all 0.2s; margin-bottom: 15px; }
         .file-drop-area:hover { border-color: var(--accent); background: var(--accent-light); }
+        .sheet-input { width: 100%; padding: 10px; border: 1px solid #bdc3c7; border-radius: 6px; font-family: inherit; font-size: 0.95rem; margin-top: 10px; text-align: left; direction: ltr; }
+        .sheet-input:focus { border-color: var(--accent); outline: none; box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2); }
+        .manual-input { width: 100%; padding: 10px; border: 1px solid #bdc3c7; border-radius: 6px; font-family: inherit; font-size: 0.95rem; margin-top: 10px; }
+        .manual-input:focus { border-color: var(--accent); outline: none; box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2); }
+        
         table { width: 100%; border-collapse: collapse; }
         th { background: #f8f9fa; padding: 12px; text-align: right; border-bottom: 2px solid #ddd; color: #7f8c8d; font-size: 0.9rem; }
         td { padding: 12px; border-bottom: 1px solid #eee; font-size: 0.95rem; }
@@ -36,19 +46,44 @@
 
     <div class="admin-layout">
         <div class="panel">
-            <div class="panel-header">👥 ניהול תלמידים (Excel)</div>
+            <div class="panel-header">👥 ניהול הרשאות תלמידים</div>
             <div class="panel-body">
-                <p style="font-size: 0.9rem; color: #7f8c8d; line-height: 1.5; margin-bottom: 20px;">
-                    העלה קובץ אקסל (.xlsx) הכולל שתי עמודות חובה:<br>
-                    <strong>שם</strong> ו-<strong>תעודת זהות</strong>.<br>
-                    התלמידים בקובץ יורשו להיכנס למבחנים.
+                <p style="font-size: 0.9rem; color: #7f8c8d; line-height: 1.5; margin-bottom: 15px;">
+                    בחר כיצד להוסיף תלמידים למאגר המורשים להיבחן:
                 </p>
-                
-                <div class="file-drop-area">
-                    <input type="file" id="excelInput" accept=".xlsx, .xls" style="display:block; margin:0 auto; width:100%;">
+
+                <div class="file-drop-area" style="text-align: right;">
+                    <label style="font-weight: bold; color: var(--primary); display: block;">אפשרות 1: הזנה ידנית (תלמיד בודד)</label>
+                    <div style="display: flex; gap: 10px; margin-top: 10px;">
+                        <input type="text" id="manualStudentName" class="manual-input" style="margin-top:0;" placeholder="שם התלמיד">
+                        <input type="text" id="manualStudentID" class="manual-input" style="margin-top:0;" placeholder="תעודת זהות">
+                    </div>
+                    <button onclick="addSingleStudent()" class="btn-download" style="background: var(--accent); padding: 10px; font-size: 1rem; margin-top: 15px; box-shadow: none;">
+                        ➕ הוסף תלמיד למאגר
+                    </button>
+                </div>
+
+                <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;">
+
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                    <label style="font-weight: bold; color: var(--primary); margin:0;">אפשרות 2: ייבוא המוני</label>
+                    <button onclick="downloadTemplate()" class="btn-download" style="background: #95a5a6; padding: 5px 10px; font-size: 0.8rem; margin: 0; width: auto; box-shadow: none;">
+                        📥 פורמט לדוגמה (Excel)
+                    </button>
                 </div>
                 
-                <button onclick="importStudentsExcel()" class="btn-download" style="width: 100%; background: var(--success); font-size: 1.1rem; padding: 15px; margin-top: 10px;">
+                <div class="file-drop-area" style="padding: 15px;">
+                    <label style="font-size: 0.9rem; color: var(--primary); display: block; margin-bottom: 10px;">קובץ אקסל (.xlsx, .csv)</label>
+                    <input type="file" id="excelInput" accept=".xlsx, .xls, .csv" style="display:block; margin:0 auto; width:100%;">
+                </div>
+
+                <div class="file-drop-area" style="padding: 15px;">
+                    <label style="font-size: 0.9rem; color: var(--primary); display: block;">קישור Google Sheets</label>
+                    <span style="font-size: 0.75rem; color: #95a5a6;">(חובה שהקובץ יהיה פתוח לצפייה באמצעות הקישור)</span>
+                    <input type="text" id="sheetsInput" class="sheet-input" placeholder="https://docs.google.com/spreadsheets/d/...">
+                </div>
+                
+                <button onclick="importStudentsData()" class="btn-download" style="width: 100%; background: var(--success); font-size: 1.1rem; padding: 15px; margin-top: 10px;">
                     סנכרן רשימה למאגר הענן
                 </button>
                 
@@ -84,54 +119,127 @@
     <script type="module">
         import { CloudService } from './js/firebase-service.js';
 
-        // פונקציית ייבוא אקסל
-        window.importStudentsExcel = async () => {
-            const fileInput = document.getElementById('excelInput');
-            const file = fileInput.files[0];
+        // הוספת תלמיד בודד בהזנה ידנית
+        window.addSingleStudent = async () => {
+            const nameInput = document.getElementById('manualStudentName');
+            const idInput = document.getElementById('manualStudentID');
+            const name = nameInput.value.trim();
+            const id = idInput.value.trim();
             const statusDiv = document.getElementById('importStatus');
-            
-            if (!file) {
-                alert("אנא בחר קובץ אקסל תחילה.");
+
+            if (!name || !id) {
+                alert("אנא הזן שם ותעודת זהות של התלמיד.");
                 return;
             }
 
             statusDiv.style.display = 'block';
             statusDiv.style.background = '#fef9e7';
             statusDiv.style.color = '#f39c12';
-            statusDiv.innerText = 'קורא קובץ ומסנכרן...';
+            statusDiv.innerText = 'שומר תלמיד בענן...';
 
-            const reader = new FileReader();
-            reader.onload = async (e) => {
-                try {
-                    const data = new Uint8Array(e.target.result);
+            try {
+                // CloudService מצפה למערך של תלמידים
+                await CloudService.saveStudents([{ id: id, name: name }]);
+                
+                statusDiv.style.background = '#e8f6f3';
+                statusDiv.style.color = '#16a085';
+                statusDiv.innerText = `✅ התלמיד ${name} נוסף בהצלחה למאגר!`;
+                
+                // ניקוי שדות
+                nameInput.value = '';
+                idInput.value = '';
+            } catch (error) {
+                console.error(error);
+                statusDiv.style.background = '#fdedec';
+                statusDiv.style.color = '#c0392b';
+                statusDiv.innerText = `❌ שגיאה בשמירה: ${error.message}`;
+            }
+        };
+
+        // הורדת קובץ אקסל לדוגמה
+        window.downloadTemplate = () => {
+            const sampleData = [
+                { "שם": "ישראל ישראלי", "תעודת זהות": "123456789" },
+                { "שם": "דוגמה תלמיד", "תעודת זהות": "987654321" }
+            ];
+            const worksheet = XLSX.utils.json_to_sheet(sampleData);
+            const workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, "תלמידים");
+            XLSX.writeFile(workbook, "פורמט_תלמידים_לדוגמה.xlsx");
+        };
+
+        // פונקציית ייבוא משולבת (קובץ או קישור)
+        window.importStudentsData = async () => {
+            const fileInput = document.getElementById('excelInput');
+            const sheetsInput = document.getElementById('sheetsInput').value.trim();
+            const file = fileInput.files[0];
+            const statusDiv = document.getElementById('importStatus');
+            
+            if (!file && !sheetsInput) {
+                alert("אנא בחר קובץ אקסל או הזן קישור ל-Google Sheets.");
+                return;
+            }
+
+            statusDiv.style.display = 'block';
+            statusDiv.style.background = '#fef9e7';
+            statusDiv.style.color = '#f39c12';
+            statusDiv.innerText = 'שואב נתונים ומסנכרן מול הענן...';
+
+            try {
+                let students = [];
+
+                if (file) {
+                    const data = await file.arrayBuffer();
                     const workbook = XLSX.read(data, { type: 'array' });
                     const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
                     const jsonData = XLSX.utils.sheet_to_json(firstSheet);
-
-                    const students = jsonData.map(row => ({
-                        id: String(row['תעודת זהות'] || row['ID'] || row['ת"ז']),
-                        name: String(row['שם'] || row['Name'])
-                    })).filter(s => s.id !== "undefined" && s.name !== "undefined");
-
-                    if (students.length === 0) {
-                        throw new Error("לא נמצאו נתונים תקינים. ודא שקיימות עמודות 'שם' ו-'תעודת זהות'.");
-                    }
-
-                    await CloudService.saveStudents(students);
+                    students = parseStudentData(jsonData);
+                } else if (sheetsInput) {
+                    const match = sheetsInput.match(/\/d\/([a-zA-Z0-9-_]+)/);
+                    if (!match) throw new Error("קישור Google Sheets אינו תקין. ודא שהעתקת את הקישור המלא.");
                     
-                    statusDiv.style.background = '#e8f6f3';
-                    statusDiv.style.color = '#16a085';
-                    statusDiv.innerText = `✅ סונכרנו ${students.length} תלמידים בהצלחה למאגר!`;
-                    fileInput.value = ''; // ניקוי
-                } catch (error) {
-                    console.error(error);
-                    statusDiv.style.background = '#fdedec';
-                    statusDiv.style.color = '#c0392b';
-                    statusDiv.innerText = `❌ שגיאה: ${error.message}`;
+                    const sheetId = match[1];
+                    const csvUrl = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:csv`;
+                    
+                    const response = await fetch(csvUrl);
+                    if (!response.ok) throw new Error("לא ניתן לגשת לקובץ. ודא בהגדרות השיתוף של גוגל שהקובץ פתוח ל'כל מי שיש לו את הקישור'.");
+                    
+                    const csvText = await response.text();
+                    const workbook = XLSX.read(csvText, { type: 'string' });
+                    const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+                    const jsonData = XLSX.utils.sheet_to_json(firstSheet);
+                    students = parseStudentData(jsonData);
                 }
-            };
-            reader.readAsArrayBuffer(file);
+
+                if (students.length === 0) {
+                    throw new Error("לא נמצאו נתונים תקינים. ודא שקיימות עמודות בשם 'שם' ו-'תעודת זהות'.");
+                }
+
+                await CloudService.saveStudents(students);
+                
+                statusDiv.style.background = '#e8f6f3';
+                statusDiv.style.color = '#16a085';
+                statusDiv.innerText = `✅ סונכרנו ${students.length} תלמידים בהצלחה למאגר!`;
+                
+                // ניקוי שדות
+                fileInput.value = ''; 
+                document.getElementById('sheetsInput').value = '';
+
+            } catch (error) {
+                console.error(error);
+                statusDiv.style.background = '#fdedec';
+                statusDiv.style.color = '#c0392b';
+                statusDiv.innerText = `❌ שגיאה: ${error.message}`;
+            }
         };
+
+        // פונקציית עזר לסידור הנתונים
+        function parseStudentData(jsonData) {
+            return jsonData.map(row => ({
+                id: String(row['תעודת זהות'] || row['ID'] || row['ת"ז'] || '').trim(),
+                name: String(row['שם'] || row['Name'] || '').trim()
+            })).filter(s => s.id && s.name && s.id !== "undefined" && s.name !== "undefined");
+        }
 
         // פונקציית שליפת הגשות
         window.fetchSubmissions = async () => {
@@ -146,7 +254,6 @@
                     return;
                 }
 
-                // מיון לפי תאריך יורד
                 submissions.sort((a, b) => (b.lastUpdate || 0) - (a.lastUpdate || 0));
 
                 tbody.innerHTML = submissions.map(sub => {
@@ -176,3 +283,5 @@
     </script>
 </body>
 </html>
+
+```
