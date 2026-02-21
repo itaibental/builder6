@@ -147,9 +147,9 @@
             <div style="text-align: center;">
                 <h2>📤 סיום והפצה</h2>
                 
-                <button class="btn-download" style="background: #e67e22; border: 1px solid #d35400; margin-bottom: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.3);" onclick="uploadExamToCloud()">
-                    <i class="fas fa-cloud-upload-alt"></i> העבר למאגר (Cloud)
-                </button>
+             <button class="btn-download" style="background: #e67e22; border: 1px solid #d35400; margin-bottom: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.3);" onclick="uploadExamToCloud()">
+    <i class="fas fa-cloud-upload-alt"></i> העבר למאגר (Cloud)
+</button>
                 <hr style="border: 0; border-top: 1px solid rgba(255,255,255,0.1); margin-bottom: 20px;">
                 
                 <div class="file-info" style="margin-bottom:10px;">ייצוא לקבצים מקומיים:</div>
@@ -174,11 +174,10 @@
 <script src="js/generator-docx.js"></script>
 <script src="js/generator.js"></script>
 <script src="js/main.js"></script>
-
 <script type="module">
     import { CloudService } from './js/firebase-service.js';
     
-    // פונקציה גלובלית שנגישה לכפתור ה-onclick
+    // פונקציה גלובלית שנגישה לכפתור
     window.uploadExamToCloud = async function() {
         if (!ExamState || !ExamState.examTitle || ExamState.questions.length === 0) {
             UI.showToast('המבחן ריק או חסר כותרת. לא ניתן להעלות.', 'error');
@@ -187,22 +186,21 @@
         
         UI.showToast('מייצר קובץ HTML ומעלה לענן...', 'info');
         
-        // איסוף מטא-דאטה
+        // איסוף מטא-דאטה מהשדות
         const duration = document.getElementById('examDurationInput').value || 90;
         const unlockCode = document.getElementById('unlockCodeInput').value || '1234';
         const teacherEmail = document.getElementById('teacherEmailInput').value || '';
         const driveLink = document.getElementById('driveFolderInput').value || '';
         const hash = Utils.simpleHash(unlockCode);
 
-        // יצירת מבנה הנתונים לשמירה עתידית
         const projectData = {
             state: ExamState,
             meta: { duration, unlockCode, teacherEmail, driveLink, examTitle: ExamState.examTitle, generalInstructions: ExamState.instructions.general }
         };
 
-        // הזרקת המבחן ל-HTML (בדיוק כמו בכפתור ההורדה)
+        // בניית ה-HTML המלא באמצעות המחולל
         const generatedHTML = HTMLBuilder.build(
-            "", // השם ריק כרגע, הדפדפן של התלמיד ימלא אותו אוטומטית בעת הטעינה
+            "", // השם ריק כרגע, יתמלא אצל התלמיד
             ExamState.questions,
             ExamState.instructions,
             ExamState.examTitle,
@@ -217,11 +215,11 @@
             ExamState.theme
         );
 
-        // עטיפת הנתונים להעלאה למאגר
+        // עטיפת הנתונים להעלאה (כולל ה-HTML השלם)
         const cloudPayload = {
             title: ExamState.examTitle,
-            htmlContent: generatedHTML, // <--- שמירת ה-HTML השלם במאגר!
-            state: JSON.parse(JSON.stringify(ExamState)), // שומרים את הסטייט כדי לאפשר עריכה בעתיד
+            htmlContent: generatedHTML, // שומרים את ה-HTML
+            state: JSON.parse(JSON.stringify(ExamState)),
             meta: { duration, unlockCodeHash: hash, teacherEmail, driveLink },
             active: true,
             createdAt: Date.now()
@@ -229,7 +227,7 @@
 
         try {
             const result = await CloudService.uploadExam(cloudPayload);
-            UI.showToast(`המבחן הועלה בהצלחה למאגר!`, 'success');
+            UI.showToast(`המבחן הועלה בהצלחה! מזהה: ${result.id}`, 'success');
         } catch (error) {
             console.error("Firebase upload error:", error);
             UI.showToast('אירעה שגיאה בהעלאה לענן: ' + error.message, 'error');
