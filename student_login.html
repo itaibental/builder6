@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <title>כניסת תלמיד - EXAMBUILDER</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .login-container { display: flex; align-items: center; justify-content: center; min-height: 100vh; background: #f4f6f8; }
+        .login-card { background: white; padding: 40px; border-radius: 20px; box-shadow: var(--shadow); width: 450px; text-align: center; }
+        .exam-card { border: 1px solid #eee; padding: 15px; margin-top: 15px; border-radius: 10px; cursor: pointer; text-align: right; transition: 0.2s; }
+        .exam-card:hover { background: var(--accent-light); border-color: var(--accent); }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <div class="login-card">
+            <h2>כניסת תלמיד</h2>
+            <div id="step1">
+                <input type="text" id="studentID" placeholder="הכנס תעודת זהות" style="font-size:1.2rem; padding:15px; margin: 20px 0; width:100%; border:1px solid #ddd; border-radius:8px;">
+                <button onclick="verify()" class="btn-download" style="width:100%; background:var(--accent);">הצג מבחנים זמינים</button>
+            </div>
+            <div id="step2" style="display:none;">
+                <h3 id="welcomeMsg"></h3>
+                <p>בחר מבחן להתחלה:</p>
+                <div id="examsList"></div>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { CloudService } from './js/firebase-service.js';
+        let student = null;
+
+        window.verify = async () => {
+            const id = document.getElementById('studentID').value;
+            student = await CloudService.verifyStudent(id);
+            if (student) {
+                document.getElementById('step1').style.display = 'none';
+                document.getElementById('step2').style.display = 'block';
+                document.getElementById('welcomeMsg').innerText = "שלום, " + student.name;
+                const exams = await CloudService.getActiveExams();
+                const list = document.getElementById('examsList');
+                list.innerHTML = exams.map(e => `
+                    <div class="exam-card" onclick="start('${e.id}')">
+                        <strong>${e.title}</strong><br>
+                        <small>נוצר ב: ${new Date(e.createdAt).toLocaleDateString()}</small>
+                    </div>
+                `).join('');
+            } else { alert("תעודת זהות לא נמצאה."); }
+        };
+
+        window.start = (examId) => {
+            localStorage.setItem('activeExamID', examId);
+            localStorage.setItem('studentID', student.id);
+            localStorage.setItem('studentName', student.name);
+            alert("טוען מבחן...");
+            // כאן תבוא הפנייה לדף הרצת המבחן
+        };
+    </script>
+</body>
+</html>
