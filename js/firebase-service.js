@@ -46,13 +46,13 @@ export const CloudService = {
         return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
     },
 
-    // שמירת התקדמות/הגשה (ממשק תלמיד)
+    // שמירת התקדמות/הגשה של תלמיד
     async saveSubmission(submissionData) {
         const id = `${submissionData.studentID}_${submissionData.examID}`;
         return await setDoc(doc(db, "submissions", id), submissionData, { merge: true });
     },
 
-    // שליפת הגשות (ממשק מנהל)
+    // שליפת כל ההגשות למנהל/מורה
     async getSubmissions() {
         const querySnapshot = await getDocs(collection(db, "submissions"));
         return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
