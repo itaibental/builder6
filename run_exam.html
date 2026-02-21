@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head><meta charset="UTF-8"><title>ביצוע מבחן</title><link rel="stylesheet" href="style.css"></head>
+<body>
+    <div id="examContent"></div>
+    <div class="exam-footer">
+        <span id="saveStatus">מוכן</span>
+        <button onclick="performSave(true)">שמור</button>
+    </div>
+    <script type="module">
+        // לוגיקת הרצת מבחן עם שמירה אוטומטית כל 4 דקות
+        setInterval(() => performSave(false), 240000);
+    </script>
+</body>
+</html>
