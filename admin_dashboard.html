@@ -1,3 +1,12 @@
+השגיאה שאתה חווה (שהתלמיד נשמר בהצלחה אבל הרשימה קורסת ולא מוצגת) נובעת כמעט תמיד מ**נתון פגום או ריק** שנמצא במסד הנתונים שלך (Firestore) מניסיונות קודמים.
+
+כאשר המערכת מנסה למשוך את כל התלמידים ולסדר אותם לפי הא"ב (`sort`), היא נתקלת בתלמיד שאין לו את השדה "שם" (`name`), ואז הקוד קורס (כי אי אפשר למיין משהו שלא קיים) ומציג את הודעת השגיאה בטבלה.
+
+כדי לפתור זאת, הוספתי "הגנת קריסה" שמוודאת שגם אם יש נתונים חסרים או פגומים בענן, המערכת תדע לטפל בהם, תציג "ללא שם" ולא תקרוס. בנוסף, הוספתי הצגה של סיבת השגיאה המדויקת במידה ויש בעיית הרשאות מול Firebase.
+
+העתק והדבק את הקוד הבא במלואו לתוך **`admin_dashboard.html`**:
+
+```html
 <!DOCTYPE html>
 <html lang="he" dir="rtl">
 <head>
@@ -153,7 +162,7 @@
                 statusDiv.innerText = `✅ התלמיד ${name} נוסף בהצלחה למאגר!`;
                 
                 nameInput.value = ''; idInput.value = '';
-                fetchStudentsList(); // ריענון הרשימה מיד לאחר ההוספה
+                fetchStudentsList(); // ריענון הרשימה
             } catch (error) {
                 statusDiv.style.background = '#fdedec';
                 statusDiv.style.color = '#c0392b';
@@ -190,7 +199,7 @@
                     students = parseStudentData(XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]]));
                 }
 
-                if (students.length === 0) throw new Error("לא נמצאו נתונים תקינים (חסרות עמודות שם / תעודת זהות).");
+                if (students.length === 0) throw new Error("לא נמצאו נתונים תקינים (חסרות עמודות 'שם' או 'תעודת זהות').");
 
                 await CloudService.saveStudents(students);
                 statusDiv.style.background = '#e8f6f3';
@@ -198,7 +207,7 @@
                 statusDiv.innerText = `✅ סונכרנו ${students.length} תלמידים בהצלחה!`;
                 
                 fileInput.value = ''; document.getElementById('sheetsInput').value = '';
-                fetchStudentsList(); // ריענון הרשימה מיד לאחר הייבוא
+                fetchStudentsList(); // ריענון הרשימה
             } catch (error) {
                 statusDiv.style.background = '#fdedec';
                 statusDiv.style.color = '#c0392b';
@@ -213,7 +222,7 @@
             })).filter(s => s.id && s.name && s.id !== "undefined");
         }
 
-        // שליפת רשימת התלמידים והצגתם בטבלה
+        // שליפת רשימת התלמידים והצגתם בטבלה (מוגן מפני קריסות של נתונים חסרים)
         window.fetchStudentsList = async () => {
             const tbody = document.querySelector('#studentsListTable tbody');
             const totalBadge = document.getElementById('totalStudentsBadge');
@@ -221,17 +230,23 @@
             
             try {
                 const students = await CloudService.getStudents();
-                if (students.length === 0) {
+                if (!students || students.length === 0) {
                     tbody.innerHTML = '<tr><td colspan="3" style="text-align:center; padding:15px; color:#e74c3c;">אין תלמידים מורשים במאגר</td></tr>';
                     totalBadge.innerText = '';
                     return;
                 }
                 
-                // סידור הרשימה לפי שם
-                students.sort((a, b) => a.name.localeCompare(b.name, 'he'));
-                totalBadge.innerText = `סה"כ מורשים במערכת: ${students.length}`;
+                // הגנה מפני רשומות פגומות מהעבר שאין להן שדה 'name' או 'id'
+                const validStudents = students.map(s => ({
+                    id: s.id || 'ללא תעודת זהות',
+                    name: s.name || 'ללא שם'
+                }));
 
-                tbody.innerHTML = students.map(s => `
+                // סידור בטוח לפי שם
+                validStudents.sort((a, b) => String(a.name).localeCompare(String(b.name), 'he'));
+                totalBadge.innerText = `סה"כ מורשים במערכת: ${validStudents.length}`;
+
+                tbody.innerHTML = validStudents.map(s => `
                     <tr>
                         <td style="padding: 8px;">${s.name}</td>
                         <td style="padding: 8px;">${s.id}</td>
@@ -241,7 +256,8 @@
                     </tr>
                 `).join('');
             } catch (error) {
-                tbody.innerHTML = '<tr><td colspan="3" style="text-align:center; padding:15px; color:#e74c3c;">שגיאה בטעינת הרשימה.</td></tr>';
+                console.error("Fetch Students Error:", error);
+                tbody.innerHTML = `<tr><td colspan="3" style="text-align:center; padding:15px; color:#c0392b; font-size:0.9rem;">שגיאה: ${error.message}</td></tr>`;
             }
         };
 
@@ -250,9 +266,9 @@
             if (confirm('האם אתה בטוח שברצונך למחוק תלמיד זה מהמאגר המורשה?')) {
                 try {
                     await CloudService.deleteStudent(id);
-                    fetchStudentsList(); // רענון
+                    fetchStudentsList(); // רענון מחדש
                 } catch (e) {
-                    alert('שגיאה במחיקת התלמיד');
+                    alert('שגיאה במחיקת התלמיד: ' + e.message);
                 }
             }
         };
@@ -264,12 +280,15 @@
             XLSX.writeFile(wb, "פורמט_תלמידים_לדוגמה.xlsx");
         };
 
+        // שליפת ההגשות בבטחה
         window.fetchSubmissions = async () => {
             const tbody = document.querySelector('#submissionsTable tbody');
             try {
                 const subs = await CloudService.getSubmissions();
-                if (subs.length === 0) return tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:30px; color:#7f8c8d;">אין הגשות כרגע במערכת.</td></tr>';
-                subs.sort((a, b) => (b.lastUpdate || 0) - (a.lastUpdate || 0));
+                if (!subs || subs.length === 0) return tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:30px; color:#7f8c8d;">אין הגשות כרגע במערכת.</td></tr>';
+                
+                subs.sort((a, b) => (Number(b.lastUpdate) || 0) - (Number(a.lastUpdate) || 0));
+                
                 tbody.innerHTML = subs.map(sub => `
                     <tr>
                         <td><strong>${sub.studentName || '---'}</strong></td>
@@ -280,7 +299,10 @@
                         <td><button class="btn-check" onclick="alert('בפיתוח...')">פתיחת מבחן</button></td>
                     </tr>
                 `).join('');
-            } catch (error) { tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">שגיאה בטעינת נתונים.</td></tr>'; }
+            } catch (error) { 
+                console.error("Fetch Submissions Error:", error);
+                tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; color:#c0392b;">שגיאה: ${error.message}</td></tr>`; 
+            }
         };
 
         window.onload = () => {
@@ -290,3 +312,5 @@
     </script>
 </body>
 </html>
+
+```
