@@ -32,7 +32,12 @@ export const CloudService = {
         );
         return Promise.all(promises);
     },
-
+// תלמיד: שליפת מבחן ספציפי מהענן לצורך פתרון
+    async getExam(examID) {
+        const docRef = doc(db, "exams", examID);
+        const docSnap = await getDoc(docRef);
+        return docSnap.exists() ? docSnap.data() : null;
+    },
     // מנהל: שליפת כל התלמידים מהמאגר לתצוגה
     async getStudents() {
         const querySnapshot = await getDocs(collection(db, "students"));
