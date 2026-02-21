@@ -147,7 +147,7 @@
             <div style="text-align: center;">
                 <h2>📤 סיום והפצה</h2>
                 
-                <button class="btn-download" style="background: #e67e22; border: 1px solid #d35400; margin-bottom: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.3);" onclick="App.moveExamToCloud()">
+                <button class="btn-download" style="background: #e67e22; border: 1px solid #d35400; margin-bottom: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.3);" onclick="uploadExamToCloud()">
                     <i class="fas fa-cloud-upload-alt"></i> העבר למאגר (Cloud)
                 </button>
                 <hr style="border: 0; border-top: 1px solid rgba(255,255,255,0.1); margin-bottom: 20px;">
@@ -178,21 +178,23 @@
 <script type="module">
     import { CloudService } from './js/firebase-service.js';
     
-    window.App.moveExamToCloud = async function() {
-        if (!ExamState.examTitle || ExamState.questions.length === 0) {
+    // פונקציה גלובלית שנגישה לכפתור ה-onclick
+    window.uploadExamToCloud = async function() {
+        if (!ExamState || !ExamState.examTitle || ExamState.questions.length === 0) {
             UI.showToast('המבחן ריק או חסר כותרת. לא ניתן להעלות.', 'error');
             return;
         }
+        
         UI.showToast('מעלה את המבחן למאגר הענן...', 'info');
         
-        // איסוף הגדרות המערכת שלא נשמרות אוטומטית במצב הרגיל
+        // איסוף מטא-דאטה מהשדות
         const duration = document.getElementById('examDurationInput').value || 90;
         const unlockCode = document.getElementById('unlockCodeInput').value || '1234';
         const teacherEmail = document.getElementById('teacherEmailInput').value || '';
         const driveLink = document.getElementById('driveFolderInput').value || '';
         const hash = Utils.simpleHash(unlockCode);
 
-        // עטיפת הנתונים לפני שליחה
+        // עטיפת הנתונים
         const cloudPayload = {
             ...ExamState,
             meta: {
@@ -209,9 +211,6 @@
         } catch (error) {
             console.error("Firebase upload error:", error);
             UI.showToast('אירעה שגיאה בהעלאה לענן: ' + error.message, 'error');
-        }
-    };
-</script>
         }
     };
 </script>
