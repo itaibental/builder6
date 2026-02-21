@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>טוען מבחן...</title>
     <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <script src="js/utils.js"></script>
+    <script src="js/generator-html.js"></script>
     <style>
         body { font-family: 'Rubik', sans-serif; display: flex; align-items: center; justify-content: center; height: 100vh; background: #f4f6f8; margin: 0; color: #2c3e50; }
         .loader-box { text-align: center; background: white; padding: 40px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); border: 1px solid #eee; }
@@ -15,15 +17,14 @@
 <body>
     <div class="loader-box">
         <div class="spinner"></div>
-        <h2>טוען את קובץ המבחן שלך...</h2>
-        <p>אנא המתן בזמן שהבחינה יורדת מהענן ☁️</p>
+        <h2>טוען את המבחן שלך...</h2>
+        <p>אנא המתן בזמן שהנתונים נשאבים מהענן ☁️</p>
     </div>
 
     <script type="module">
         import { CloudService } from './js/firebase-service.js';
 
         async function initExam() {
-            // קבלת מזהה התלמיד והמבחן שהוגדרו במסך ההתחברות (student_login.html)
             const examId = localStorage.getItem('activeExamID');
             const studentName = localStorage.getItem('studentName') || 'תלמיד לא ידוע';
             const studentID = localStorage.getItem('studentID');
@@ -35,36 +36,62 @@
             }
 
             try {
-                // משיכת המבחן המלא מהענן
                 const examDoc = await CloudService.getExam(examId);
                 
-                if (!examDoc || !examDoc.htmlContent) {
-                    alert('קובץ המבחן לא נמצא במאגר או שאינו מכיל HTML תקין.');
+                if (!examDoc) {
+                    alert('קובץ המבחן לא נמצא במאגר המערכת.');
                     window.location.href = 'student_login.html';
                     return;
                 }
 
-                // הדפדפן מחליף את עמוד הטעינה הנוכחי בקוד ה-HTML של המבחן שהמורה העלה!
-                document.open();
-                document.write(examDoc.htmlContent);
-                document.close();
+                // בדיקה: האם זה מבחן חדש שיש לו HTML מוכן?
+                if (examDoc.htmlContent) {
+                    document.open();
+                    document.write(examDoc.htmlContent);
+                    document.close();
 
-                // לאחר שהקוד נפרס, אנו מזריקים את שם התלמיד הספציפי לתיבת השם
-                setTimeout(() => {
-                    const nameField = document.getElementById('studentNameField');
-                    if(nameField) nameField.value = studentName;
-                    
-                    document.title = `מבחן - ${studentName}`;
-                }, 300);
+                    setTimeout(() => {
+                        const nameField = document.getElementById('studentNameField');
+                        if(nameField) nameField.value = studentName;
+                        document.title = `מבחן - ${studentName}`;
+                    }, 300);
+                } 
+                // גיבוי: האם זה מבחן ישן שצריך לבנות את ה-HTML שלו עכשיו?
+                else if (examDoc.state) {
+                    console.log("Old exam format detected. Building HTML dynamically...");
+                    const state = examDoc.state;
+                    const meta = state.meta || { duration: 90, unlockCodeHash: '', teacherEmail: '', driveLink: '' };
+
+                    const htmlString = HTMLBuilder.build(
+                        studentName, 
+                        state.questions || [], 
+                        state.instructions || {general: '', parts: {}}, 
+                        state.examTitle || 'מבחן', 
+                        state.logoData, 
+                        state.solutionDataUrl, 
+                        meta.duration, 
+                        meta.unlockCodeHash, 
+                        state.parts || [], 
+                        meta.teacherEmail, 
+                        meta.driveLink, 
+                        examDoc, 
+                        state.theme || {}
+                    );
+
+                    document.open();
+                    document.write(htmlString);
+                    document.close();
+                } else {
+                    throw new Error("קובץ המבחן ריק או פגום.");
+                }
 
             } catch (error) {
-                console.error("Error loading exam HTML:", error);
-                alert("אירעה שגיאה במשיכת קובץ המבחן מהמאגר.");
+                console.error("Error loading exam:", error);
+                alert("אירעה שגיאה במשיכת המבחן מהמאגר: " + error.message);
                 window.location.href = 'student_login.html';
             }
         }
 
-        // הפעלת הפונקציה בעליית הדף
         window.onload = initExam;
     </script>
 </body>
