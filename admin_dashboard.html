@@ -278,24 +278,42 @@
             }
         };
 
-        // שליפת ההגשות בבטחה
+     // שליפת ההגשות בבטחה וחיבור כפתור הבדיקה
         window.fetchSubmissions = async () => {
             const tbody = document.querySelector('#submissionsTable tbody');
             try {
                 const subs = await CloudService.getSubmissions();
-                if (!subs || subs.length === 0) return tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:30px;">אין הגשות כרגע במערכת.</td></tr>';
+                if (!subs || subs.length === 0) return tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:30px;">אין תלמידים שנבחנים כרגע.</td></tr>';
+                
                 subs.sort((a, b) => (Number(b.lastUpdate) || 0) - (Number(a.lastUpdate) || 0));
-                tbody.innerHTML = subs.map(sub => `
+                
+                tbody.innerHTML = subs.map(sub => {
+                    let statusLabel = 'במהלך פתרון';
+                    let statusClass = 'status-progress';
+                    
+                    if (sub.status === 'submitted') {
+                        statusLabel = 'הוגש סופית';
+                        statusClass = 'status-submitted';
+                    } else if (sub.status === 'graded') {
+                        statusLabel = 'נבדק';
+                        statusClass = 'status-submitted';
+                    }
+
+                    return `
                     <tr>
                         <td><strong>${sub.studentName || '---'}</strong></td>
                         <td>${sub.studentID || '---'}</td>
                         <td>${sub.examTitle || sub.examID || 'מבחן'}</td>
                         <td><span style="font-size:0.85rem; color:#95a5a6;">${sub.lastUpdate ? new Date(sub.lastUpdate).toLocaleString('he-IL') : 'לא ידוע'}</span></td>
-                        <td><span class="status-badge ${sub.status === 'submitted' ? 'status-submitted' : 'status-progress'}">${sub.status === 'submitted' ? 'הוגש סופית' : 'במהלך פתרון'}</span></td>
-                        <td><button class="btn-check" onclick="alert('פונקציית בדיקה בפיתוח...')">פתיחת מבחן</button></td>
+                        <td><span class="status-badge ${statusClass}">${statusLabel}</span></td>
+                        <td><button class="btn-check" onclick="window.open('grade_exam.html?subId=${sub.studentID}_${sub.examID}', '_blank')">פתח לבדיקה</button></td>
                     </tr>
-                `).join('');
-            } catch (error) { tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; color:#c0392b;">שגיאה: ${error.message}</td></tr>`; }
+                    `;
+                }).join('');
+            } catch (error) { 
+                tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; color:#c0392b;">שגיאה: ${error.message}</td></tr>`; 
+            }
+        };
         };
 
         window.downloadTemplate = () => {
