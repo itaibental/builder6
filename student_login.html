@@ -32,8 +32,12 @@
             <div id="step1">
                 <h2>הזדהות למערכת</h2>
                 <p style="color:#7f8c8d; margin-bottom:20px;">אנא הזן את תעודת הזהות שלך כדי לצפות במבחנים הזמינים עבורך.</p>
-                <input type="text" id="studentID" class="id-input" placeholder="הכנס תעודת זהות (9 ספרות)">
-                <button onclick="verifyStudent()" class="btn-download" style="width: 100%; background: var(--accent); font-size: 1.1rem; padding: 15px;">המשך לבחירת מבחן</button>
+                
+                <input type="text" id="studentID" class="id-input" placeholder="הכנס תעודת זהות (9 ספרות)" onkeypress="handleEnter(event)">
+                
+                <button id="loginBtn" onclick="fallbackError()" class="btn-download" style="width: 100%; background: var(--accent); font-size: 1.1rem; padding: 15px;">
+                    המשך לבחירת מבחן
+                </button>
             </div>
 
             <div id="step2" style="display:none; text-align: right;">
@@ -45,17 +49,36 @@
         </div>
     </div>
 
+    <script>
+        function fallbackError() {
+            if (!window.firebaseLoaded) {
+                alert("המערכת לא הצליחה להתחבר לענן (Firebase).\n\n1. ודא שאתה פותח את האתר דרך שרת מקומי (Live Server).\n2. ודא שהקובץ firebase-service.js קיים בתוך תיקיית js.");
+            }
+        }
+        function handleEnter(e) {
+            if (e.key === 'Enter') document.getElementById('loginBtn').click();
+        }
+    </script>
+
     <script type="module">
         import { CloudService } from './js/firebase-service.js';
         
+        // סימון שהענן נטען בהצלחה כדי לבטל את שגיאת הגיבוי
+        window.firebaseLoaded = true;
         let currentUser = null;
 
-        window.verifyStudent = async () => {
+        // חיבור הכפתור לפעולת האימות
+        document.getElementById('loginBtn').onclick = async () => {
+            const btn = document.getElementById('loginBtn');
             const idInput = document.getElementById('studentID').value.trim();
+            
             if (!idInput) {
                 alert('נא להזין תעודת זהות');
                 return;
             }
+
+            btn.innerText = "⏳ מאמת פרטים...";
+            btn.disabled = true;
 
             try {
                 const student = await CloudService.verifyStudent(idInput);
@@ -67,43 +90,53 @@
                     loadExams();
                 } else {
                     alert("תעודת זהות לא נמצאה במערכת. אנא פנה למורה.");
+                    btn.innerText = "המשך לבחירת מבחן";
+                    btn.disabled = false;
                 }
             } catch (error) {
-                console.error(error);
-                alert("שגיאה בהתחברות למאגר");
+                console.error("Login Error:", error);
+                alert("שגיאה בהתחברות למאגר הנתונים. ודא שיש לך חיבור לאינטרנט.");
+                btn.innerText = "המשך לבחירת מבחן";
+                btn.disabled = false;
             }
         };
 
+        // פונקציה לטעינת מבחנים פעילים
         async function loadExams() {
             const listContainer = document.getElementById('examsList');
             listContainer.innerHTML = '<p style="text-align:center;">טוען מבחנים...</p>';
             
             try {
                 const exams = await CloudService.getActiveExams();
-                if (exams.length === 0) {
+                if (!exams || exams.length === 0) {
                     listContainer.innerHTML = '<p style="text-align:center; color:#e74c3c;">אין מבחנים פעילים כרגע.</p>';
                     return;
                 }
 
+                // סידור מהמבחן החדש לישן
+                exams.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+
                 listContainer.innerHTML = exams.map(exam => `
                     <div class="exam-item" onclick="startExam('${exam.id}')">
                         <div class="exam-title">📄 ${exam.title || 'מבחן ללא שם'}</div>
-                        <div class="exam-date">פורסם בתאריך: ${new Date(exam.createdAt).toLocaleDateString('he-IL')}</div>
+                        <div class="exam-date">פורסם בתאריך: ${exam.createdAt ? new Date(exam.createdAt).toLocaleDateString('he-IL') : 'לא ידוע'}</div>
                     </div>
                 `).join('');
             } catch (error) {
+                console.error("Load Exams Error:", error);
                 listContainer.innerHTML = '<p style="text-align:center; color:red;">שגיאה בטעינת המבחנים.</p>';
             }
         }
-window.startExam = (examId) => {
-            // שמירת המזהים כדי שדף המבחן ידע מה למשוך
+
+        // פונקציית הפעלת המבחן מתוך הרשימה
+        window.startExam = (examId) => {
+            // שמירת הפרטים ב-Local Storage כדי להעביר לדף הרצת המבחן
             localStorage.setItem('activeExamID', examId);
             localStorage.setItem('studentID', currentUser.id);
             localStorage.setItem('studentName', currentUser.name);
             
-            // מעבר אוטומטי לדף פתרון המבחן
+            // מעבר לדף פתרון המבחן (run_exam.html)
             window.location.href = 'run_exam.html';
-        };
         };
     </script>
 </body>
