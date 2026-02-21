@@ -185,29 +185,51 @@
             return;
         }
         
-        UI.showToast('מעלה את המבחן למאגר הענן...', 'info');
+        UI.showToast('מייצר קובץ HTML ומעלה לענן...', 'info');
         
-        // איסוף מטא-דאטה מהשדות
+        // איסוף מטא-דאטה
         const duration = document.getElementById('examDurationInput').value || 90;
         const unlockCode = document.getElementById('unlockCodeInput').value || '1234';
         const teacherEmail = document.getElementById('teacherEmailInput').value || '';
         const driveLink = document.getElementById('driveFolderInput').value || '';
         const hash = Utils.simpleHash(unlockCode);
 
-        // עטיפת הנתונים
+        // יצירת מבנה הנתונים לשמירה עתידית
+        const projectData = {
+            state: ExamState,
+            meta: { duration, unlockCode, teacherEmail, driveLink, examTitle: ExamState.examTitle, generalInstructions: ExamState.instructions.general }
+        };
+
+        // הזרקת המבחן ל-HTML (בדיוק כמו בכפתור ההורדה)
+        const generatedHTML = HTMLBuilder.build(
+            "", // השם ריק כרגע, הדפדפן של התלמיד ימלא אותו אוטומטית בעת הטעינה
+            ExamState.questions,
+            ExamState.instructions,
+            ExamState.examTitle,
+            ExamState.logoData,
+            ExamState.solutionDataUrl,
+            duration,
+            hash,
+            ExamState.parts,
+            teacherEmail,
+            driveLink,
+            projectData,
+            ExamState.theme
+        );
+
+        // עטיפת הנתונים להעלאה למאגר
         const cloudPayload = {
-            ...ExamState,
-            meta: {
-                duration: duration,
-                unlockCodeHash: hash,
-                teacherEmail: teacherEmail,
-                driveLink: driveLink
-            }
+            title: ExamState.examTitle,
+            htmlContent: generatedHTML, // <--- שמירת ה-HTML השלם במאגר!
+            state: JSON.parse(JSON.stringify(ExamState)), // שומרים את הסטייט כדי לאפשר עריכה בעתיד
+            meta: { duration, unlockCodeHash: hash, teacherEmail, driveLink },
+            active: true,
+            createdAt: Date.now()
         };
 
         try {
             const result = await CloudService.uploadExam(cloudPayload);
-            UI.showToast(`המבחן הועלה בהצלחה! מזהה: ${result.id}`, 'success');
+            UI.showToast(`המבחן הועלה בהצלחה למאגר!`, 'success');
         } catch (error) {
             console.error("Firebase upload error:", error);
             UI.showToast('אירעה שגיאה בהעלאה לענן: ' + error.message, 'error');
