@@ -23,19 +23,15 @@
         <div class="resizer resizer-right-col" id="dragHandleRight"></div>
         <div class="scroll-content">
             <h2>⚙️ הגדרות מבחן</h2>
-            
             <div class="form-group">
                 <label>פרטי המבחן</label>
                 <input type="text" id="examTitleInput" placeholder="כותרת המבחן" oninput="App.updateExamTitle()" style="margin-bottom: 1vh;">
                 <div style="display:flex; gap:10px; align-items:center; margin-bottom:10px;">
-                     <label for="schoolLogoInput" style="margin:0; cursor:pointer;" class="btn-secondary-small">
-                        <i class="fas fa-image"></i> העלאת לוגו
-                     </label>
+                     <label for="schoolLogoInput" style="margin:0; cursor:pointer;" class="btn-secondary-small"><i class="fas fa-image"></i> העלאת לוגו</label>
                      <input type="file" id="schoolLogoInput" accept="image/*" onchange="App.handleLogoUpload(event)" style="display:none;">
                      <span id="logoStatus" style="font-size:0.8rem; color:#bdc3c7;">אין לוגו</span>
                 </div>
             </div>
-
             <details class="editor-category">
                 <summary>🎨 עיצוב</summary>
                 <div class="form-group">
@@ -47,19 +43,12 @@
                     <input type="color" id="headerColorInput" value="#2c3e50" onchange="App.updateTheme('header', this.value)">
                 </div>
             </details>
-
             <details class="editor-category" open>
                 <summary>הגדרות מערכת</summary>
                 <div class="form-group">
                     <div style="display:flex; gap:1vw; margin-bottom:1vh;">
-                        <div style="flex:1">
-                            <label for="examDurationInput" style="font-size: 0.8rem;">זמן (דקות)</label>
-                            <input type="number" id="examDurationInput" value="90" min="1">
-                        </div>
-                        <div style="flex:1">
-                            <label for="unlockCodeInput" style="font-size: 0.8rem;">קוד מורה</label>
-                            <input type="text" id="unlockCodeInput" value="1234">
-                        </div>
+                        <div style="flex:1"><label for="examDurationInput" style="font-size: 0.8rem;">זמן (דקות)</label><input type="number" id="examDurationInput" value="90" min="1"></div>
+                        <div style="flex:1"><label for="unlockCodeInput" style="font-size: 0.8rem;">קוד מורה</label><input type="text" id="unlockCodeInput" value="1234"></div>
                     </div>
                 </div>
                 <div class="form-group">
@@ -68,7 +57,6 @@
                     <input type="text" id="driveFolderInput" placeholder="קישור לתיקיית Drive">
                 </div>
             </details>
-
             <details class="editor-category">
                 <summary>ייבוא פתרון</summary>
                 <div class="form-group">
@@ -76,7 +64,6 @@
                     <small style="color:#bdc3c7; font-size:0.75rem;">קובץ זה יוצג למורה בלבד בבדיקה.</small>
                 </div>
             </details>
-
             <div class="stats-box">
                 <h3>סיכום ניקוד</h3>
                 <div id="statsContainer"></div>
@@ -86,7 +73,6 @@
     </div>
 
     <div class="col-middle">
-        
         <div class="sticky-toolbar">
             <span class="toolbar-label">עיצוב:</span>
             <button onmousedown="event.preventDefault(); App.applyFormat('b')" title="מודגש (B)"><i class="fas fa-bold"></i></button>
@@ -97,39 +83,30 @@
                 <i class="fas fa-plus-circle"></i> שאלה חדשה
             </button>
         </div>
-
         <div id="questionsList">
             <div id="previewHeader">
                 <img id="previewLogo" src="" alt="School Logo" style="display:none;">
                 <h1 id="previewExamTitle" style="cursor: text;" title="לחץ לעריכה בסרגל הימני">מבחן בגרות</h1>
                 <input type="text" id="studentNameInput" placeholder="שם התלמיד (יופיע כאן)" disabled style="opacity:0.6; cursor: not-allowed;">
             </div>
-
             <div class="editor-section">
                 <label class="section-label">הנחיות כלליות למבחן:</label>
-                <textarea id="examInstructions" class="editable-textarea instructions-editor" placeholder="רשום כאן הנחיות כלליות למבחן (למשל: חומר עזר מותר, משך הבחינה...)" oninput="App.updateGeneralInstructions(this.value)"></textarea>
+                <textarea id="examInstructions" class="editable-textarea instructions-editor" placeholder="רשום כאן הנחיות כלליות למבחן..." oninput="App.updateGeneralInstructions(this.value)"></textarea>
             </div>
-
             <div class="parts-manager">
                 <div class="tabs" id="previewTabs"></div>
                 <button class="btn-icon-add" onclick="App.addPart()" title="הוסף פרק חדש"><i class="fas fa-plus"></i></button>
             </div>
-
             <div id="currentPartEditor">
                 <div class="part-header-editor">
-                    <input type="text" id="partNameEditor" class="part-name-input" placeholder="שם הפרק (למשל: פרק ראשון)" oninput="App.updatePartNameInternal(this.value)">
+                    <input type="text" id="partNameEditor" class="part-name-input" placeholder="שם הפרק" oninput="App.updatePartNameInternal(this.value)">
                     <div style="flex-grow:1"></div>
                     <button class="btn-delete-part" onclick="App.removePart()" title="מחק פרק זה"><i class="fas fa-trash"></i> מחק פרק</button>
                 </div>
-
-                <textarea id="previewPartInstructions" class="editable-textarea part-instructions-editor" placeholder="הנחיות לפרק זה (למשל: ענה על 2 מתוך 3 השאלות)..." oninput="App.updatePartInstructionsFromPreview(this.value)"></textarea>
-
+                <textarea id="previewPartInstructions" class="editable-textarea part-instructions-editor" placeholder="הנחיות לפרק זה..." oninput="App.updatePartInstructionsFromPreview(this.value)"></textarea>
                 <div id="previewQuestionsContainer" class="questions-stream"></div>
-
                 <div class="add-question-area">
-                    <button class="btn-add-big" onclick="App.addNewQuestionToCurrentPart()">
-                        <i class="fas fa-plus-circle"></i> הוסף שאלה חדשה
-                    </button>
+                    <button class="btn-add-big" onclick="App.addNewQuestionToCurrentPart()"><i class="fas fa-plus-circle"></i> הוסף שאלה חדשה</button>
                 </div>
             </div>
         </div>
@@ -147,15 +124,13 @@
             <div style="text-align: center;">
                 <h2>📤 סיום והפצה</h2>
                 
-             <button class="btn-download" style="background: #e67e22; border: 1px solid #d35400; margin-bottom: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.3);" onclick="uploadExamToCloud()">
-    <i class="fas fa-cloud-upload-alt"></i> העבר למאגר (Cloud)
-</button>
+                <button class="btn-download" style="background: #e67e22; border: 1px solid #d35400; margin-bottom: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.3);" onclick="uploadExamToCloud()">
+                    <i class="fas fa-cloud-upload-alt"></i> העבר למאגר (Cloud)
+                </button>
                 <hr style="border: 0; border-top: 1px solid rgba(255,255,255,0.1); margin-bottom: 20px;">
                 
                 <div class="file-info" style="margin-bottom:10px;">ייצוא לקבצים מקומיים:</div>
-                <button class="btn-download" style="background: #8e44ad; margin-bottom: 15px; border:1px solid #7d3c98;" onclick="Generator.previewExam()">
-                    <i class="fas fa-eye"></i> תצוגה מקדימה (תלמיד)
-                </button>
+                <button class="btn-download" style="background: #8e44ad; margin-bottom: 15px; border:1px solid #7d3c98;" onclick="Generator.previewExam()"><i class="fas fa-eye"></i> תצוגה מקדימה (תלמיד)</button>
                 <button class="btn-download" onclick="Generator.generateAndDownload()">הורד מבחן (HTML)</button>
                 <button class="btn-download" style="background: #2980b9; margin-top: 15px;" onclick="Generator.generateAndDownloadDocx()">הורד כ-DOCX (לפתרון)</button>
             </div>
@@ -163,9 +138,7 @@
     </div>
 </div>
 
-<footer class="main-footer">
-    EXAMBUILDER 4.0 &copy; 2026
-</footer>
+<footer class="main-footer">EXAMBUILDER 4.0 &copy; 2026</footer>
 
 <script src="js/state.js"></script>
 <script src="js/utils.js"></script>
@@ -174,10 +147,10 @@
 <script src="js/generator-docx.js"></script>
 <script src="js/generator.js"></script>
 <script src="js/main.js"></script>
+
 <script type="module">
     import { CloudService } from './js/firebase-service.js';
     
-    // פונקציה גלובלית שנגישה לכפתור
     window.uploadExamToCloud = async function() {
         if (!ExamState || !ExamState.examTitle || ExamState.questions.length === 0) {
             UI.showToast('המבחן ריק או חסר כותרת. לא ניתן להעלות.', 'error');
@@ -186,7 +159,6 @@
         
         UI.showToast('מייצר קובץ HTML ומעלה לענן...', 'info');
         
-        // איסוף מטא-דאטה מהשדות
         const duration = document.getElementById('examDurationInput').value || 90;
         const unlockCode = document.getElementById('unlockCodeInput').value || '1234';
         const teacherEmail = document.getElementById('teacherEmailInput').value || '';
@@ -198,9 +170,9 @@
             meta: { duration, unlockCode, teacherEmail, driveLink, examTitle: ExamState.examTitle, generalInstructions: ExamState.instructions.general }
         };
 
-        // בניית ה-HTML המלא באמצעות המחולל
+        // המחולל בונה את ה-HTML השלם כדי שהתלמיד יוכל לפתוח אותו מיד
         const generatedHTML = HTMLBuilder.build(
-            "", // השם ריק כרגע, יתמלא אצל התלמיד
+            "", 
             ExamState.questions,
             ExamState.instructions,
             ExamState.examTitle,
@@ -215,10 +187,9 @@
             ExamState.theme
         );
 
-        // עטיפת הנתונים להעלאה (כולל ה-HTML השלם)
         const cloudPayload = {
             title: ExamState.examTitle,
-            htmlContent: generatedHTML, // שומרים את ה-HTML
+            htmlContent: generatedHTML, // שומר את ה-HTML בענן!
             state: JSON.parse(JSON.stringify(ExamState)),
             meta: { duration, unlockCodeHash: hash, teacherEmail, driveLink },
             active: true,
@@ -227,7 +198,7 @@
 
         try {
             const result = await CloudService.uploadExam(cloudPayload);
-            UI.showToast(`המבחן הועלה בהצלחה! מזהה: ${result.id}`, 'success');
+            UI.showToast(`המבחן הועלה בהצלחה למאגר!`, 'success');
         } catch (error) {
             console.error("Firebase upload error:", error);
             UI.showToast('אירעה שגיאה בהעלאה לענן: ' + error.message, 'error');
