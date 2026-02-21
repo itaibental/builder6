@@ -178,19 +178,40 @@
 <script type="module">
     import { CloudService } from './js/firebase-service.js';
     
-    // הוספת הפונקציה לאובייקט App הקיים
     window.App.moveExamToCloud = async function() {
         if (!ExamState.examTitle || ExamState.questions.length === 0) {
             UI.showToast('המבחן ריק או חסר כותרת. לא ניתן להעלות.', 'error');
             return;
         }
         UI.showToast('מעלה את המבחן למאגר הענן...', 'info');
+        
+        // איסוף הגדרות המערכת שלא נשמרות אוטומטית במצב הרגיל
+        const duration = document.getElementById('examDurationInput').value || 90;
+        const unlockCode = document.getElementById('unlockCodeInput').value || '1234';
+        const teacherEmail = document.getElementById('teacherEmailInput').value || '';
+        const driveLink = document.getElementById('driveFolderInput').value || '';
+        const hash = Utils.simpleHash(unlockCode);
+
+        // עטיפת הנתונים לפני שליחה
+        const cloudPayload = {
+            ...ExamState,
+            meta: {
+                duration: duration,
+                unlockCodeHash: hash,
+                teacherEmail: teacherEmail,
+                driveLink: driveLink
+            }
+        };
+
         try {
-            const result = await CloudService.uploadExam(ExamState);
+            const result = await CloudService.uploadExam(cloudPayload);
             UI.showToast(`המבחן הועלה בהצלחה! מזהה: ${result.id}`, 'success');
         } catch (error) {
             console.error("Firebase upload error:", error);
             UI.showToast('אירעה שגיאה בהעלאה לענן: ' + error.message, 'error');
+        }
+    };
+</script>
         }
     };
 </script>
