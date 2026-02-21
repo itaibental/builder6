@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <title>מנהל מערכת - EXAMBUILDER</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <style>
+        .admin-layout { display: grid; grid-template-columns: 350px 1fr; gap: 20px; padding: 20px; height: calc(100vh - 70px); }
+        .panel { background: white; border-radius: 12px; display: flex; flex-direction: column; box-shadow: var(--shadow); }
+        .panel-header { padding: 15px; border-bottom: 1px solid #eee; background: #f8f9fa; font-weight: bold; }
+        .panel-body { padding: 20px; overflow-y: auto; flex: 1; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { text-align: right; padding: 12px; border-bottom: 1px solid #eee; }
+        .btn-check { background: var(--accent); color: white; border: none; padding: 5px 12px; border-radius: 4px; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <header class="main-app-header">
+        <a href="index.html" style="color:white; position:absolute; right:20px; text-decoration:none;">🏠 בית</a>
+        <h1>לוח בקרה ומנהל</h1>
+    </header>
+    <div class="admin-layout">
+        <div class="panel">
+            <div class="panel-header">📥 ייבוא תלמידים (Excel)</div>
+            <div class="panel-body">
+                <p>העלה קובץ אקסל הכולל עמודות: "שם" ו-"תעודת זהות".</p>
+                <input type="file" id="excelInput" accept=".xlsx, .xls" style="margin: 20px 0;">
+                <button onclick="importExcel()" class="btn-add-big" style="font-size: 1rem;">סנכרן רשימה לענן</button>
+                <div id="importStatus" style="margin-top:15px; font-weight:bold; color:var(--success);"></div>
+            </div>
+        </div>
+        <div class="panel">
+            <div class="panel-header">📊 מעקב הגשות ובדיקה</div>
+            <div class="panel-body">
+                <table id="subsTable">
+                    <thead>
+                        <tr>
+                            <th>תלמיד</th>
+                            <th>מזהה</th>
+                            <th>מבחן</th>
+                            <th>סטטוס</th>
+                            <th>פעולה</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { CloudService } from './js/firebase-service.js';
+
+        window.importExcel = async () => {
+            const file = document.getElementById('excelInput').files[0];
+            if (!file) return alert("בחר קובץ אקסל");
+            const reader = new FileReader();
+            reader.onload = async (e) => {
+                const data = new Uint8Array(e.target.result);
+                const workbook = XLSX.read(data, { type: 'array' });
+                const rows = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]]);
+                const students = rows.map(r => ({
+                    id: String(r['תעודת זהות'] || r['ID']),
+                    name: r['שם'] || r['Name']
+                })).filter(s => s.id && s.name);
+
+                await CloudService.saveStudents(students);
+                document.getElementById('importStatus').innerText = `סונכרנו ${students.length} תלמידים.`;
+            };
+            reader.readAsArrayBuffer(file);
+        };
+
+        async function fetchSubs() {
+            const subs = await CloudService.getSubmissions();
+            const body = document.querySelector('#subsTable tbody');
+            body.innerHTML = subs.map(s => `
+                <tr>
+                    <td>${s.studentName || '---'}</td>
+                    <td>${s.studentID}</td>
+                    <td>${s.examTitle || 'מבחן'}</td>
+                    <td>${s.status === 'submitted' ? '✅ הוגש' : '⏳ בתהליך'}</td>
+                    <td><button class="btn-check" onclick="alert('פתיחת ממשק בדיקה')">בדוק</button></td>
+                </tr>
+            `).join('');
+        }
+        window.onload = fetchSubs;
+    </script>
+</body>
+</html>
