@@ -95,15 +95,15 @@
                 listContainer.innerHTML = '<p style="text-align:center; color:red;">שגיאה בטעינת המבחנים.</p>';
             }
         }
-
-        window.startExam = (examId) => {
-            // שמירת הפרטים ב-Local Storage כדי להעביר לדף הרצת המבחן שתיצור בעתיד
+window.startExam = (examId) => {
+            // שמירת המזהים כדי שדף המבחן ידע מה למשוך
             localStorage.setItem('activeExamID', examId);
             localStorage.setItem('studentID', currentUser.id);
             localStorage.setItem('studentName', currentUser.name);
             
-            alert(`בקרוב: כאן ייטען המבחן עם מזהה ${examId}\nבשלב זה, בניית מנוע הטעינה מהענן (run_exam.html) תתבצע בהמשך.`);
-            // window.location.href = `run_exam.html?examId=${examId}`;
+            // מעבר אוטומטי לדף פתרון המבחן
+            window.location.href = 'run_exam.html';
+        };
         };
     </script>
 </body>
