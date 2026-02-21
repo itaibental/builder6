@@ -14,10 +14,11 @@ const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
 export const CloudService = {
+    // מורה: העלאת מבחן לענן (כולל קוד HTML)
     async uploadExam(examData) {
         return await addDoc(collection(db, "exams"), examData);
     },
-    // פונקציה חדשה למחיקת מבחן מהמאגר
+    // מנהל: מחיקת מבחן מהמאגר (הפונקציה שהייתה חסרה לך)
     async deleteExam(examID) {
         return await deleteDoc(doc(db, "exams", examID));
     },
