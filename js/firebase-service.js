@@ -17,6 +17,10 @@ export const CloudService = {
     async uploadExam(examData) {
         return await addDoc(collection(db, "exams"), examData);
     },
+    // פונקציה חדשה למחיקת מבחן מהמאגר
+    async deleteExam(examID) {
+        return await deleteDoc(doc(db, "exams", examID));
+    },
     async saveStudents(studentList) {
         const promises = studentList.map(student => setDoc(doc(db, "students", student.id), student));
         return Promise.all(promises);
