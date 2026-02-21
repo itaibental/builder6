@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>מערכת מבחנים - כניסה</title>
+    <title>EXAMBUILDER 6 - כניסה</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;700;900&display=swap" rel="stylesheet">
@@ -47,26 +47,42 @@
         <div class="circle circle-1"></div>
         <div class="circle circle-2"></div>
         <div class="header-content">
-            <h1 class="main-title">EXAMBUILDER 4.0</h1>
+            <h1 class="main-title">EXAMBUILDER 6</h1>
             <div class="sub-title">המערכת המתקדמת ליצירה, ניהול והפצה של מבחני בגרות דיגיטליים בענן</div>
         </div>
         <div class="cards-container">
+            
             <a href="student_login.html" class="welcome-card">
                 <div class="card-icon-wrapper"><div class="card-icon">🎓</div></div>
                 <div class="card-title">כניסת תלמיד</div>
                 <div class="card-desc">הזדהות באמצעות תעודת זהות, בחירת מבחן זמין מתוך מאגר הענן וביצוע הבחינה.</div>
             </a>
-            <a href="editor.html" class="welcome-card">
+            
+            <div onclick="requirePassword('editor.html')" class="welcome-card">
                 <div class="card-icon-wrapper"><div class="card-icon">✏️</div></div>
                 <div class="card-title">יצירת מבחן</div>
                 <div class="card-desc">עורך מתקדם ליצירה, עריכה והפצה של מבחנים. כולל אפשרות העלאה למאגר בענן.</div>
-            </a>
-            <a href="admin_dashboard.html" class="welcome-card">
+            </div>
+            
+            <div onclick="requirePassword('admin_dashboard.html')" class="welcome-card">
                 <div class="card-icon-wrapper"><div class="card-icon">👨‍💼</div></div>
                 <div class="card-title">מנהל מערכת</div>
                 <div class="card-desc">ייבוא רשימות תלמידים (Excel), מעקב הגשות בזמן אמת ובדיקת מבחנים.</div>
-            </a>
+            </div>
+
         </div>
     </div>
+
+    <script>
+        function requirePassword(targetPage) {
+            const pass = prompt("🔒 אזור מוגן לצוות חינוכי בלבד.\nאנא הזן סיסמת גישה:");
+            
+            if (pass === "1234") {
+                window.location.href = targetPage;
+            } else if (pass !== null) { 
+                alert("❌ סיסמה שגויה! הגישה נדחתה.");
+            }
+        }
+    </script>
 </body>
 </html>
