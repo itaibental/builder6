@@ -15,14 +15,16 @@ const db = getFirestore(app);
 
 export const CloudService = {
     // מורה: העלאת מבחן לענן
-    async uploadExam(examState) {
-        const examData = {
-            title: examState.examTitle,
-            state: JSON.parse(JSON.stringify(examState)),
-            active: true,
-            createdAt: Date.now()
-        };
+  // מורה: העלאת מבחן לענן (כולל קוד ה-HTML המלא)
+    async uploadExam(examData) {
         return await addDoc(collection(db, "exams"), examData);
+    },
+
+    // תלמיד: שליפת מבחן ספציפי מהענן לצורך פתרון
+    async getExam(examID) {
+        const docRef = doc(db, "exams", examID);
+        const docSnap = await getDoc(docRef);
+        return docSnap.exists() ? docSnap.data() : null;
     },
 
     // מנהל: שמירת רשימת תלמידים מתוך קובץ אקסל או ידנית
