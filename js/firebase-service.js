@@ -1,5 +1,5 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-import { getFirestore, collection, addDoc, getDocs, doc, setDoc, query, where, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+import { getFirestore, collection, addDoc, getDocs, doc, setDoc, deleteDoc, query, where, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyALZyRVu3NaH4HaH8DbthySORQYLMdbTng",
@@ -25,12 +25,23 @@ export const CloudService = {
         return await addDoc(collection(db, "exams"), examData);
     },
 
-    // מנהל: שמירת רשימת תלמידים מתוך קובץ אקסל
+    // מנהל: שמירת רשימת תלמידים מתוך קובץ אקסל או ידנית
     async saveStudents(studentList) {
         const promises = studentList.map(student => 
             setDoc(doc(db, "students", student.id), student)
         );
         return Promise.all(promises);
+    },
+
+    // מנהל: שליפת כל התלמידים מהמאגר לתצוגה
+    async getStudents() {
+        const querySnapshot = await getDocs(collection(db, "students"));
+        return querySnapshot.docs.map(doc => doc.data());
+    },
+
+    // מנהל: מחיקת תלמיד מהמאגר
+    async deleteStudent(studentID) {
+        return await deleteDoc(doc(db, "students", studentID));
     },
 
     // תלמיד: אימות תעודת זהות מול הרשימה המאושרת בענן
