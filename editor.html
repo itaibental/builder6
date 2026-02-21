@@ -2,18 +2,88 @@
 <html lang="he" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <title>עורך המבחנים</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>מערכת מחולל מבחני בגרות</title>
     <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
 <body>
-    <header class="main-app-header"><h1>EXAMBUILDER - עורך</h1></header>
-    <div class="container">
-        <!-- ממשק העורך כפי שפותח -->
-        <button onclick="App.saveToCloud()">שמור בענן (Firebase)</button>
+<div class="toast-container" id="toastContainer"></div>
+<header class="main-app-header">
+    <div style="position:absolute; right:20px; top:15px;"><a href="index.html" style="color:white; text-decoration:none; font-size:1.2rem;">🏠 בית</a></div>
+    <h1>EXAMBUILDER 4.0</h1>
+</header>
+
+<div class="container">
+    <div class="col-panel col-right" id="rightPanel">
+        <div class="resizer resizer-right-col" id="dragHandleRight"></div>
+        <div class="scroll-content">
+            <h2>⚙️ הגדרות מבחן</h2>
+            <div class="form-group">
+                <label>פרטי המבחן</label>
+                <input type="text" id="examTitleInput" placeholder="כותרת המבחן" oninput="App.updateExamTitle()">
+            </div>
+            <details class="editor-category" open>
+                <summary>הגדרות מערכת</summary>
+                <div class="form-group">
+                    <div style="display:flex; gap:10px;">
+                        <div style="flex:1"><label>זמן (דקות)</label><input type="number" id="examDurationInput" value="90"></div>
+                        <div style="flex:1"><label>קוד מורה</label><input type="text" id="unlockCodeInput" value="1234"></div>
+                    </div>
+                </div>
+            </details>
+            <div class="stats-box">
+                <h3>סיכום ניקוד</h3>
+                <div id="statsContainer"></div>
+                <div class="stat-row total-row"><span>סה"כ:</span> <span id="totalPoints">0</span></div>
+            </div>
+        </div>
     </div>
-    <script src="js/state.js"></script>
-    <script src="js/utils.js"></script>
-    <script src="js/ui.js"></script>
-    <script type="module" src="js/main.js"></script>
+
+    <div class="col-middle">
+        <div class="sticky-toolbar">
+            <button onmousedown="event.preventDefault(); App.applyFormat('b')"><i class="fas fa-bold"></i></button>
+            <button onmousedown="event.preventDefault(); App.applyFormat('u')"><i class="fas fa-underline"></i></button>
+            <div class="separator"></div>
+            <button onclick="App.addNewQuestionToCurrentPart()"><i class="fas fa-plus-circle"></i> שאלה חדשה</button>
+        </div>
+        <div id="questionsList">
+            <div id="previewHeader">
+                <h1 id="previewExamTitle">מבחן בגרות</h1>
+            </div>
+            <div class="editor-section">
+                <textarea id="examInstructions" class="editable-textarea instructions-editor" placeholder="הנחיות כלליות..." oninput="App.updateGeneralInstructions(this.value)"></textarea>
+            </div>
+            <div class="parts-manager">
+                <div class="tabs" id="previewTabs"></div>
+                <button class="btn-icon-add" onclick="App.addPart()"><i class="fas fa-plus"></i></button>
+            </div>
+            <div id="currentPartEditor">
+                <div id="previewQuestionsContainer"></div>
+                <button class="btn-add-big" onclick="App.addNewQuestionToCurrentPart()">הוסף שאלה</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-panel col-left" id="leftPanel">
+        <div class="resizer resizer-left-col" id="dragHandleLeft"></div>
+        <div class="scroll-content">
+            <h3>💾 שמירה והפצה</h3>
+            <button class="btn-download" onclick="App.saveProject()">שמור טיוטה (JSON)</button>
+            <button class="btn-download" style="background:#e67e22; margin-top:20px;" onclick="App.moveExamToCloud()">
+                <i class="fas fa-cloud-upload-alt"></i> העבר למאגר (Cloud)
+            </button>
+            <hr style="margin:20px 0; opacity:0.1;">
+            <button class="btn-download" onclick="Generator.generateAndDownload()">הורד מבחן (HTML)</button>
+        </div>
+    </div>
+</div>
+
+<script src="js/state.js"></script>
+<script src="js/utils.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/generator-html.js"></script>
+<script src="js/generator.js"></script>
+<script src="js/main.js"></script>
 </body>
 </html>
