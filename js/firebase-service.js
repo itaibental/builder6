@@ -50,7 +50,6 @@ export const CloudService = {
         const querySnapshot = await getDocs(collection(db, "submissions"));
         return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
     },
-    // פונקציה חדשה: משיכת הגשה בודדת לבדיקה של המורה
     async getSubmission(subID) {
         const docRef = doc(db, "submissions", subID);
         const docSnap = await getDoc(docRef);
