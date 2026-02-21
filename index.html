@@ -2,22 +2,71 @@
 <html lang="he" dir="rtl">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>EXAMBUILDER 4.0 - כניסה</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;700;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
     <style>
-        .welcome-wrapper { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; background: linear-gradient(135deg, #2c3e50 0%, #2980b9 100%); color: white; }
-        .cards-container { display: flex; gap: 20px; margin-top: 40px; }
-        .role-card { background: white; color: #2c3e50; padding: 30px; border-radius: 15px; text-decoration: none; text-align: center; width: 200px; transition: 0.3s; }
-        .role-card:hover { transform: translateY(-10px); }
+        .welcome-wrapper {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            background: linear-gradient(135deg, var(--primary) 0%, #2980b9 100%);
+            padding: 20px;
+        }
+        .header-content { text-align: center; color: white; margin-bottom: 60px; }
+        .main-title { font-size: 4rem; font-weight: 900; margin: 0; }
+        .sub-title { font-size: 1.3rem; margin-top: 15px; opacity: 0.9; max-width: 600px; }
+        .cards-container { display: flex; gap: 30px; justify-content: center; flex-wrap: wrap; }
+        .welcome-card { 
+            background: rgba(255, 255, 255, 0.95); 
+            border-radius: 24px; 
+            width: 280px; 
+            height: 380px; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            justify-content: center; 
+            text-decoration: none; 
+            color: var(--primary); 
+            padding: 30px; 
+            text-align: center; 
+            box-shadow: 0 15px 35px rgba(0,0,0,0.15);
+            transition: transform 0.3s;
+        }
+        .welcome-card:hover { transform: translateY(-10px); }
+        .card-icon-wrapper { background: #f4f6f8; width: 100px; height: 100px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-bottom: 25px; }
+        .card-icon { font-size: 3rem; }
+        .card-title { font-size: 1.7rem; font-weight: 700; margin-bottom: 15px; }
+        .card-desc { font-size: 0.95rem; color: #7f8c8d; line-height: 1.5; }
     </style>
 </head>
 <body>
     <div class="welcome-wrapper">
-        <h1>EXAMBUILDER 4.0</h1>
+        <div class="header-content">
+            <h1 class="main-title">EXAMBUILDER 4.0</h1>
+            <div class="sub-title">המערכת המתקדמת ליצירה, ניהול והפצה של מבחנים דיגיטליים בענן</div>
+        </div>
         <div class="cards-container">
-            <a href="student.html" class="role-card"><h2>🎓 תלמיד</h2></a>
-            <a href="editor.html" class="role-card"><h2>✏️ מורה</h2></a>
-            <a href="admin.html" class="role-card"><h2>🖥️ מנהל</h2></a>
+            <a href="student_login.html" class="welcome-card">
+                <div class="card-icon-wrapper"><div class="card-icon">🎓</div></div>
+                <div class="card-title">תלמיד</div>
+                <div class="card-desc">הזדהות, בחירת מבחן מהמאגר וביצוע הבחינה עם שמירה בענן.</div>
+            </a>
+            <a href="editor.html" class="welcome-card">
+                <div class="card-icon-wrapper"><div class="card-icon">✏️</div></div>
+                <div class="card-title">מורה</div>
+                <div class="card-desc">עורך מבחנים מתקדם ליצירה והעברת מבחנים למאגר הענן.</div>
+            </a>
+            <a href="admin_dashboard.html" class="welcome-card">
+                <div class="card-icon-wrapper"><div class="card-icon">👨‍💼</div></div>
+                <div class="card-title">מנהל</div>
+                <div class="card-desc">ניהול תלמידים מאקסל, מעקב בזמן אמת ובדיקת הגשות.</div>
+            </a>
         </div>
     </div>
 </body>
