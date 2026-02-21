@@ -1,15 +1,84 @@
 <!DOCTYPE html>
 <html lang="he" dir="rtl">
-<head><meta charset="UTF-8"><title>ביצוע מבחן</title><link rel="stylesheet" href="style.css"></head>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>טוען מבחן...</title>
+    <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <script src="js/utils.js"></script>
+    <script src="js/generator-html.js"></script>
+    <style>
+        body { font-family: 'Rubik', sans-serif; display: flex; align-items: center; justify-content: center; height: 100vh; background: #f4f6f8; margin: 0; color: #2c3e50; }
+        .loader-box { text-align: center; background: white; padding: 40px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        .spinner { border: 4px solid rgba(0,0,0,0.1); width: 40px; height: 40px; border-radius: 50%; border-left-color: #3498db; animation: spin 1s linear infinite; margin: 0 auto 20px auto; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    </style>
+</head>
 <body>
-    <div id="examContent"></div>
-    <div class="exam-footer">
-        <span id="saveStatus">מוכן</span>
-        <button onclick="performSave(true)">שמור</button>
+    <div class="loader-box">
+        <div class="spinner"></div>
+        <h2>טוען את המבחן שלך...</h2>
+        <p>אנא המתן בזמן שהנתונים נשאבים מהענן ☁️</p>
     </div>
+
     <script type="module">
-        // לוגיקת הרצת מבחן עם שמירה אוטומטית כל 4 דקות
-        setInterval(() => performSave(false), 240000);
+        import { CloudService } from './js/firebase-service.js';
+
+        async function initExam() {
+            const examId = localStorage.getItem('activeExamID');
+            const studentName = localStorage.getItem('studentName') || 'תלמיד לא ידוע';
+            const studentID = localStorage.getItem('studentID');
+
+            if (!examId || !studentID) {
+                alert('חסרים פרטי הזדהות. אנא התחבר מחדש.');
+                window.location.href = 'student_login.html';
+                return;
+            }
+
+            try {
+                // משיכת המבחן ממאגר הנתונים בענן
+                const examDoc = await CloudService.getExam(examId);
+                
+                if (!examDoc) {
+                    alert('המבחן לא נמצא במאגר או שהוסר על ידי המורה.');
+                    window.location.href = 'student_login.html';
+                    return;
+                }
+
+                // חילוץ נתוני המבחן (State) וההגדרות (Meta)
+                const state = examDoc.state;
+                const meta = state.meta || { duration: 90, unlockCodeHash: '', teacherEmail: '', driveLink: '' };
+
+                // הרכבת קוד ה-HTML המלא של המבחן באמצעות המחולל הקיים
+                const htmlString = HTMLBuilder.build(
+                    studentName, 
+                    state.questions || [], 
+                    state.instructions || {general: '', parts: {}}, 
+                    state.examTitle || 'מבחן', 
+                    state.logoData, 
+                    state.solutionDataUrl, 
+                    meta.duration, 
+                    meta.unlockCodeHash, 
+                    state.parts || [], 
+                    meta.teacherEmail, 
+                    meta.driveLink, 
+                    examDoc, // projectData
+                    state.theme || {}
+                );
+
+                // הזרקת המבחן אל תוך החלון הנוכחי והפעלתו
+                document.open();
+                document.write(htmlString);
+                document.close();
+
+            } catch (error) {
+                console.error("Error loading exam:", error);
+                alert("אירעה שגיאה בטעינת המבחן. אנא קרא למורה או רענן את העמוד.");
+            }
+        }
+
+        // הפעלת הטעינה ברגע שהדף נטען
+        window.onload = initExam;
     </script>
 </body>
 </html>
