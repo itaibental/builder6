@@ -595,66 +595,65 @@ const HTMLBuilder = {
 
 ```javascript
 const Generator = {
+ window.Generator = {
     getHTML: function() {
-        // איסוף מטא-דאטה בדיוק כמו בפונקציית הענן
         const duration = document.getElementById('examDurationInput').value || 90;
         const unlockCode = document.getElementById('unlockCodeInput').value || '1234';
         const teacherEmail = document.getElementById('teacherEmailInput').value || '';
         const driveLink = document.getElementById('driveFolderInput').value || '';
-        const hash = Utils.simpleHash(unlockCode);
+        const hash = window.Utils.simpleHash(unlockCode);
 
         const projectData = {
-            state: ExamState,
-            meta: { duration, unlockCode, teacherEmail, driveLink, examTitle: ExamState.examTitle, generalInstructions: ExamState.instructions.general }
+            state: window.ExamState,
+            meta: { duration, unlockCode, teacherEmail, driveLink, examTitle: window.ExamState.examTitle, generalInstructions: window.ExamState.instructions.general }
         };
 
-        // בניית ה-HTML בעזרת המחולל החדש שלנו
-        return HTMLBuilder.build(
-            "", // שם התלמיד (ריק בתצוגה מקדימה)
-            ExamState.questions,
-            ExamState.instructions,
-            ExamState.examTitle,
-            ExamState.logoData,
-            ExamState.solutionDataUrl,
+        return window.HTMLBuilder.build(
+            "", 
+            window.ExamState.questions,
+            window.ExamState.instructions,
+            window.ExamState.examTitle,
+            window.ExamState.logoData,
+            window.ExamState.solutionDataUrl,
             duration,
             hash,
-            ExamState.parts,
+            window.ExamState.parts,
             teacherEmail,
             driveLink,
             projectData,
-            ExamState.theme
+            window.ExamState.theme
         );
     },
 
     previewExam: function() {
-        if (!ExamState.examTitle || ExamState.questions.length === 0) {
-            UI.showToast('המבחן ריק או חסר כותרת.', 'error');
+        if (!window.ExamState.examTitle || window.ExamState.questions.length === 0) {
+            if(window.UI) window.UI.showToast('המבחן ריק או חסר כותרת.', 'error');
             return;
         }
-        
-        const html = this.getHTML();
-        const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
-        const url = URL.createObjectURL(blob);
-        window.open(url, '_blank');
+        try {
+            const html = this.getHTML();
+            const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            window.open(url, '_blank');
+        } catch(e) { alert("שגיאה ביצירת תצוגה מקדימה: " + e.message); }
     },
 
     generateAndDownload: function() {
-        if (!ExamState.examTitle || ExamState.questions.length === 0) {
-            UI.showToast('המבחן ריק.', 'error');
+        if (!window.ExamState.examTitle || window.ExamState.questions.length === 0) {
+            if(window.UI) window.UI.showToast('המבחן ריק.', 'error');
             return;
         }
-        
-        const html = this.getHTML();
-        const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = ExamState.examTitle + '.html';
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
+        try {
+            const html = this.getHTML();
+            const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = window.ExamState.examTitle + '.html';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        } catch(e) { alert("שגיאה בהורדת המבחן: " + e.message); }
     }
 };
-
-```
