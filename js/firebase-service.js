@@ -17,6 +17,9 @@ export const CloudService = {
     async uploadExam(examData) {
         return await addDoc(collection(db, "exams"), examData);
     },
+    async deleteExam(examID) {
+        return await deleteDoc(doc(db, "exams", examID));
+    },
     async saveStudents(studentList) {
         const promises = studentList.map(student => setDoc(doc(db, "students", student.id), student));
         return Promise.all(promises);
@@ -54,5 +57,9 @@ export const CloudService = {
         const docRef = doc(db, "submissions", subID);
         const docSnap = await getDoc(docRef);
         return docSnap.exists() ? docSnap.data() : null;
+    },
+    // הפונקציה החדשה: מחיקת הגשה של תלמיד מהמאגר
+    async deleteSubmission(subID) {
+        return await deleteDoc(doc(db, "submissions", subID));
     }
 };
