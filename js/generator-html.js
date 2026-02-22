@@ -1,23 +1,30 @@
 /**
  * HTMLBuilder
  */
-const HTMLBuilder = {
+window.HTMLBuilder = {
     build: function(studentName, questions, instructions, examTitle, logoData, solutionDataUrl, duration, unlockCodeHash, parts, teacherEmail, driveLink, projectData, theme) {
         
-        const tabsHTML = parts.map((p, idx) => `<button class="tab-btn ${idx===0?'active':''}" onclick="showPart('${p.id}')">${p.name}</button>`).join('');
+        // --- מנגנוני הגנה למבחנים וטיוטות מגרסאות ישנות ---
+        const safeInstructions = (typeof instructions === 'string') ? { general: instructions, parts: {} } : (instructions || { general: '', parts: {} });
+        if (!safeInstructions.parts) safeInstructions.parts = {};
+        const safeParts = parts || [{ id: 'A', name: 'חלק ראשון' }];
+        const safeQuestions = questions || [];
+        const safeTheme = theme || { background: '#f4f6f8', header: '#2c3e50' };
 
-        const sectionsHTML = parts.map((p, idx) => {
-            const partQuestions = questions.filter(q => q.part === p.id);
-            const partInstrHtml = instructions.parts[p.id] ? `<div class="part-instructions">${instructions.parts[p.id].replace(/\n/g, '<br>')}</div>` : '';
+        const tabsHTML = safeParts.map((p, idx) => `<button class="tab-btn ${idx===0?'active':''}" onclick="showPart('${p.id}')">${p.name}</button>`).join('');
+
+        const sectionsHTML = safeParts.map((p, idx) => {
+            const partQuestions = safeQuestions.filter(q => q.part === p.id || (!q.part && idx === 0)); // אם לשאלה אין פרק, היא תכנס לראשון
+            const partInstrHtml = safeInstructions.parts[p.id] ? `<div class="part-instructions">${safeInstructions.parts[p.id].replace(/\n/g, '<br>')}</div>` : '';
             
             let qHtml = '';
             if(partQuestions.length === 0) {
                 qHtml = '<p style="text-align:center; color:#95a5a6; padding:20px;">אין שאלות בחלק זה</p>';
             } else {
                 qHtml = partQuestions.map((q, qIdx) => {
-                    const embedSrc = Utils.getVideoEmbedUrl(q.videoUrl, q.videoOptions);
+                    const embedSrc = window.Utils ? window.Utils.getVideoEmbedUrl(q.videoUrl, q.videoOptions) : '';
                     let vid = embedSrc ? `<div class="video-wrapper"><div class="video-shield"></div><iframe sandbox="allow-scripts allow-same-origin allow-presentation" src="${embedSrc}" frameborder="0"></iframe></div>` : '';
-                    const imgSrc = Utils.getImageSrc(q.imageUrl);
+                    const imgSrc = window.Utils ? window.Utils.getImageSrc(q.imageUrl) : q.imageUrl;
                     let img = imgSrc ? `<div class="image-wrapper"><img src="${imgSrc}" alt="Question Image"></div>` : '';
 
                     let interactionHTML = '';
@@ -26,18 +33,18 @@ const HTMLBuilder = {
 
                     if (q.subQuestions && q.subQuestions.length > 0) {
                         interactionHTML = q.subQuestions.map((sq, si) => {
-                            const label = ExamState.subLabels[si] || (si + 1);
+                            const label = (window.ExamState && window.ExamState.subLabels) ? window.ExamState.subLabels[si] : (si + 1);
                             const sqModelAns = sq.modelAnswer ? `<div class="model-answer-secret" style="display:none; margin-top:5px; background:#fff3cd; color:#856404; padding:5px; border-radius:4px; font-size:0.9em; border:1px solid #ffeeba;"><strong>מחוון (${label}'):</strong> <span class="model-ans-text-content">${sq.modelAnswer}</span></div>` : '';
                             
-                            const sqEmbedSrc = Utils.getVideoEmbedUrl(sq.videoUrl, { showControls: true, modestBranding: true });
+                            const sqEmbedSrc = window.Utils ? window.Utils.getVideoEmbedUrl(sq.videoUrl, { showControls: true, modestBranding: true }) : '';
                             let sqVid = sqEmbedSrc ? `<div class="video-wrapper"><div class="video-shield"></div><iframe sandbox="allow-scripts allow-same-origin allow-presentation" src="${sqEmbedSrc}" frameborder="0"></iframe></div>` : '';
-                            const sqImgSrc = Utils.getImageSrc(sq.imageUrl);
+                            const sqImgSrc = window.Utils ? window.Utils.getImageSrc(sq.imageUrl) : sq.imageUrl;
                             let sqImg = sqImgSrc ? `<div class="image-wrapper"><img src="${sqImgSrc}" alt="SubQ Image"></div>` : '';
 
                             return `
                             <div class="sub-question-block" data-points="${sq.points}" style="margin-top:20px; border-right:3px solid #eee; padding-right:15px;">
-                                <div class="sub-q-title" style="font-weight:bold; color:#3498db; margin-bottom:5px;">סעיף ${label}' (${sq.points} נק')</div>
-                                <div class="sub-q-text" id="q-text-${q.id}-${si}">${sq.text}</div>
+                                <div class="sub-q-title" style="font-weight:bold; color:#3498db; margin-bottom:5px;">סעיף ${label}' (${sq.points || 0} נק')</div>
+                                <div class="sub-q-text" id="q-text-${q.id}-${si}">${sq.text || ''}</div>
                                 ${sqImg}${sqVid}
                                 <div class="answer-area" style="margin-top:10px;">
                                     <div class="textarea-wrapper">
@@ -48,8 +55,8 @@ const HTMLBuilder = {
                                 <div class="grading-area">
                                     <div style="display:flex; align-items:center; gap:1vw;">
                                         <label>ניקוד:</label>
-                                        <input type="number" class="grade-input" id="grade-input-${q.id}-${si}" min="0" max="${sq.points}" oninput="calcTotal()" disabled>
-                                        <span class="grade-max">מתוך ${sq.points}</span>
+                                        <input type="number" class="grade-input" id="grade-input-${q.id}-${si}" min="0" max="${sq.points || 0}" oninput="calcTotal()" disabled>
+                                        <span class="grade-max">מתוך ${sq.points || 0}</span>
                                     </div>
                                     <input type="text" class="teacher-comment" id="comment-input-${q.id}-${si}" placeholder="הערה מילולית..." disabled style="width: 100%; margin-top: 5px; padding: 5px; border: 1px solid #ddd; border-radius: 4px;">
                                     ${sqModelAns}
@@ -70,8 +77,8 @@ const HTMLBuilder = {
                         <div class="grading-area">
                             <div style="display:flex; align-items:center; gap:1vw;">
                                 <label>ניקוד:</label>
-                                <input type="number" class="grade-input" id="grade-input-${q.id}" min="0" max="${q.points}" oninput="calcTotal()" disabled>
-                                <span class="grade-max">מתוך ${q.points}</span>
+                                <input type="number" class="grade-input" id="grade-input-${q.id}" min="0" max="${q.points || 0}" oninput="calcTotal()" disabled>
+                                <span class="grade-max">מתוך ${q.points || 0}</span>
                             </div>
                             <input type="text" class="teacher-comment" id="comment-input-${q.id}" placeholder="הערה מילולית למורה..." disabled style="width: 100%; margin-top: 5px; padding: 5px; border: 1px solid #ddd; border-radius: 4px;">
                             ${modelAnsHtml}
@@ -80,10 +87,10 @@ const HTMLBuilder = {
 
                     return `<div class="q-block" id="question-block-${q.id}">
                         <div class="q-header">
-                            <span class="q-points">(${q.points} נק' סה"כ)</span>
+                            <span class="q-points">(${q.points || 0} נק' סה"כ)</span>
                             <strong id="q-label-${q.id}">שאלה ${qIdx+1}:</strong>
                         </div>
-                        <div class="q-content" id="q-main-text-${q.id}">${q.text}</div>
+                        <div class="q-content" id="q-main-text-${q.id}">${q.text || ''}</div>
                         ${img}${vid}
                         ${interactionHTML}
                         ${gradingHTML}
@@ -91,16 +98,16 @@ const HTMLBuilder = {
                 }).join('');
             }
             return `<div id="part-${p.id}" class="exam-section ${idx===0?'active':''}">
-                <h2 style="color:${theme ? theme.header : '#2c3e50'}; border-bottom:0.3vh solid #3498db; font-weight: 700; padding-bottom:1vh; margin-bottom:3vh;">${p.name}</h2>
+                <h2 style="color:${safeTheme.header}; border-bottom:0.3vh solid #3498db; font-weight: 700; padding-bottom:1vh; margin-bottom:3vh;">${p.name}</h2>
                 ${partInstrHtml}${qHtml}</div>`;
         }).join('');
 
-        const globalInstructionsHTML = instructions.general ? `<div class="instructions-box global-instructions"><h3>הנחיות כלליות</h3><div class="instructions-text">${instructions.general.replace(/\n/g, '<br>')}</div></div>` : '';
+        const globalInstructionsHTML = safeInstructions.general ? `<div class="instructions-box global-instructions"><h3>הנחיות כלליות</h3><div class="instructions-text">${safeInstructions.general.replace(/\n/g, '<br>')}</div></div>` : '';
         const logoHTML = logoData ? `<img src="${logoData}" alt="Logo" class="school-logo">` : '';
         const embeddedProjectData = projectData ? `<script type="application/json" id="exam-engine-data">${JSON.stringify(projectData).replace(/<\/script>/g, '<\\/script>')}</script>` : '';
 
-        const bgColor = theme && theme.background ? theme.background : '#f4f6f8';
-        const hdrColor = theme && theme.header ? theme.header : '#2c3e50';
+        const bgColor = safeTheme.background;
+        const hdrColor = safeTheme.header;
 
         const cloudSaveArea = `
             <div style="text-align:center; margin: 30px 0; background: #ebf5fb; padding: 20px; border-radius: 12px; border: 1px dashed #3498db;">
@@ -179,7 +186,7 @@ const HTMLBuilder = {
                     <li>⏳ <strong>משך הבחינה:</strong> ${duration} דקות.</li>
                     <li>🖥️ <strong>מצב מסך:</strong> הבחינה מתבצעת במסך מלא בלבד.</li>
                     <li>🚫 <strong>אזהרה:</strong> יציאה ממסך מלא או מעבר לחלון אחר ינעלו את המבחן באופן מיידי!</li>
-                    ${instructions.general ? '<li style="margin-top:10px; padding-top:10px; border-top:1px solid rgba(255,255,255,0.2);"><strong>הנחיות מיוחדות:</strong><br>' + instructions.general.replace(/\n/g, '<br>') + '</li>' : ''}
+                    ${safeInstructions.general ? '<li style="margin-top:10px; padding-top:10px; border-top:1px solid rgba(255,255,255,0.2);"><strong>הנחיות מיוחדות:</strong><br>' + safeInstructions.general.replace(/\n/g, '<br>') + '</li>' : ''}
                 </ul>
             </div>
             
