@@ -152,55 +152,62 @@
     import { CloudService } from './js/firebase-service.js';
     
     window.uploadExamToCloud = async function() {
-        if (!ExamState || !ExamState.examTitle || ExamState.questions.length === 0) {
-            UI.showToast('המבחן ריק או חסר כותרת. לא ניתן להעלות.', 'error');
-            return;
-        }
-        
-        UI.showToast('מייצר קובץ HTML ומעלה לענן...', 'info');
-        
-        const duration = document.getElementById('examDurationInput').value || 90;
-        const unlockCode = document.getElementById('unlockCodeInput').value || '1234';
-        const teacherEmail = document.getElementById('teacherEmailInput').value || '';
-        const driveLink = document.getElementById('driveFolderInput').value || '';
-        const hash = Utils.simpleHash(unlockCode);
-
-        const projectData = {
-            state: ExamState,
-            meta: { duration, unlockCode, teacherEmail, driveLink, examTitle: ExamState.examTitle, generalInstructions: ExamState.instructions.general }
-        };
-
-        const generatedHTML = HTMLBuilder.build(
-            "", 
-            ExamState.questions,
-            ExamState.instructions,
-            ExamState.examTitle,
-            ExamState.logoData,
-            ExamState.solutionDataUrl,
-            duration,
-            hash,
-            ExamState.parts,
-            teacherEmail,
-            driveLink,
-            projectData,
-            ExamState.theme
-        );
-
-        const cloudPayload = {
-            title: ExamState.examTitle,
-            htmlContent: generatedHTML, 
-            state: JSON.parse(JSON.stringify(ExamState)),
-            meta: { duration, unlockCodeHash: hash, teacherEmail, driveLink },
-            active: true,
-            createdAt: Date.now()
-        };
-
         try {
+            if (!window.ExamState || !window.ExamState.examTitle || window.ExamState.questions.length === 0) {
+                alert('המבחן ריק או חסר כותרת. לא ניתן להעלות.');
+                return;
+            }
+            
+            if(window.UI && window.UI.showToast) window.UI.showToast('מייצר קובץ HTML ומעלה לענן...', 'info');
+            
+            const duration = document.getElementById('examDurationInput').value || 90;
+            const unlockCode = document.getElementById('unlockCodeInput').value || '1234';
+            const teacherEmail = document.getElementById('teacherEmailInput').value || '';
+            const driveLink = document.getElementById('driveFolderInput').value || '';
+            const hash = window.Utils.simpleHash(unlockCode);
+
+            const projectData = {
+                state: window.ExamState,
+                meta: { duration, unlockCode, teacherEmail, driveLink, examTitle: window.ExamState.examTitle, generalInstructions: window.ExamState.instructions.general }
+            };
+
+            if (!window.HTMLBuilder) throw new Error("קובץ המחולל HTMLBuilder לא נטען בהצלחה.");
+
+            const generatedHTML = window.HTMLBuilder.build(
+                "", 
+                window.ExamState.questions,
+                window.ExamState.instructions,
+                window.ExamState.examTitle,
+                window.ExamState.logoData,
+                window.ExamState.solutionDataUrl,
+                duration,
+                hash,
+                window.ExamState.parts,
+                teacherEmail,
+                driveLink,
+                projectData,
+                window.ExamState.theme
+            );
+
+            const cloudPayload = {
+                title: window.ExamState.examTitle,
+                htmlContent: generatedHTML, 
+                state: JSON.parse(JSON.stringify(window.ExamState)),
+                meta: { duration, unlockCodeHash: hash, teacherEmail, driveLink },
+                active: true,
+                createdAt: Date.now()
+            };
+
             const result = await CloudService.uploadExam(cloudPayload);
-            UI.showToast(`המבחן הועלה בהצלחה למאגר!`, 'success');
+            if(window.UI && window.UI.showToast) {
+                window.UI.showToast(`המבחן הועלה בהצלחה למאגר!`, 'success');
+            } else {
+                alert('✅ המבחן הועלה בהצלחה למאגר!');
+            }
+            
         } catch (error) {
             console.error("Firebase upload error:", error);
-            UI.showToast('אירעה שגיאה בהעלאה לענן: ' + error.message, 'error');
+            alert('❌ אירעה שגיאה:\n' + error.message);
         }
     };
 </script>
