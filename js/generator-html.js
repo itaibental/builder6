@@ -1,12 +1,3 @@
-כדי להוסיף את תכונת ה**הקלדה הקולית** לכל תיבות הטקסט במבחן, אנחנו צריכים לשדרג את המחולל שבונה את קובץ המבחן (`js/generator-html.js`).
-
-הוספתי מעטפת סביב כל `textarea` שכוללת את כפתור המיקרופון בצד שמאל למעלה (מותאם לעברית מימין לשמאל). הכפתור משתמש ב-Web Speech API של הדפדפן (תומך בכרום/אדג') כדי לזהות דיבור בעברית ולהזריק אותו ישירות לאיפה שסמן העכבר של התלמיד נמצא.
-
-בנוסף, הוספתי הגנה כך שהכפתור יפסיק להקליט אם התלמיד עובר שאלה, ואם המבחן כבר הוגש או במצב בדיקה - כפתור המיקרופון ינוטרל.
-
-העתק את הקוד הבא במלואו והדבק אותו בתוך **`js/generator-html.js`**:
-
-```javascript
 /**
  * HTMLBuilder
  */
@@ -139,7 +130,6 @@ const HTMLBuilder = {
         .image-wrapper { text-align: center; margin: 20px 0; width: 100%; }
         .image-wrapper img { max-width: 100%; height: auto; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); display: block; margin: 0 auto; }
         
-        /* עיצוב הקלדה קולית */
         .textarea-wrapper { position: relative; width: 100%; margin-top: 5px; }
         .textarea-wrapper textarea { width: 100%; padding-left: 50px !important; box-sizing: border-box; }
         .mic-btn { position: absolute; top: 10px; left: 10px; background: #fff; border: 1px solid #ddd; border-radius: 50%; width: 35px; height: 35px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; transition: 0.2s; z-index: 5; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
@@ -286,7 +276,6 @@ const HTMLBuilder = {
             }
         };
         
-        // --- לוגיקת הקלדה קולית (Voice Typing) ---
         let recognition = null;
         let activeMicBtn = null;
         let activeTextareaId = null;
@@ -317,7 +306,6 @@ const HTMLBuilder = {
                     textarea.value = textBefore + finalTranscript + " " + textAfter;
                     textarea.selectionStart = textarea.selectionEnd = cursorPos + finalTranscript.length + 1;
                     
-                    // שמירה לענן אוטומטית אחרי כל משפט
                     if(typeof saveProgressToCloud === 'function' && document.body.dataset.status !== 'grading') {
                         saveProgressToCloud(false, true);
                     }
@@ -365,7 +353,6 @@ const HTMLBuilder = {
             activeMicBtn = null;
             activeTextareaId = null;
         }
-        // ------------------------------------------
 
         let audioCtx = null, isPlayingSound = false, soundLoopTimeout;
         function toggleSoundCheck() {
@@ -555,8 +542,8 @@ const HTMLBuilder = {
             document.querySelectorAll('.color-btn').forEach(b => b.classList.remove('active'));
             if(btn) btn.classList.add('active');
             if(color && color !== 'transparent') {
-                const svg = \`<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32"><path fill="\${color}" stroke="black" stroke-width="1" d="M28.06 6.94L25.06 3.94a2.003 2.003 0 0 0-2.83 0l-16.17 16.17a2.003 2.003 0 0 0-.58 1.41V26h4.48c.53 0 1.04-.21 1.41-.59l16.17-16.17c.79-.78.79-2.05.52-2.3zM8.5 24H7v-1.5l14.5-14.5 1.5 1.5L8.5 24z"/><path fill="\${color}" d="M4 28l4-4H4z"/></svg>\`;
-                document.body.style.cursor = \`url('data:image/svg+xml;base64,\${btoa(svg)}') 0 32, auto\`;
+                const svg = '<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32"><path fill="' + color + '" stroke="black" stroke-width="1" d="M28.06 6.94L25.06 3.94a2.003 2.003 0 0 0-2.83 0l-16.17 16.17a2.003 2.003 0 0 0-.58 1.41V26h4.48c.53 0 1.04-.21 1.41-.59l16.17-16.17c.79-.78.79-2.05.52-2.3zM8.5 24H7v-1.5l14.5-14.5 1.5 1.5L8.5 24z"/><path fill="' + color + '" d="M4 28l4-4H4z"/></svg>';
+                document.body.style.cursor = "url('data:image/svg+xml;base64," + btoa(svg) + "') 0 32, auto";
             } else { document.body.style.cursor = color === 'transparent' ? 'crosshair' : 'default'; }
         }
         document.addEventListener('mouseup', () => {
@@ -586,5 +573,3 @@ const HTMLBuilder = {
         <\/script></body></html>`;
     }
 };
-
-```
