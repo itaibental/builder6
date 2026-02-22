@@ -94,9 +94,9 @@ const HTMLBuilder = {
 
         const cloudSaveArea = `
             <div style="text-align:center; margin: 30px 0; background: #ebf5fb; padding: 20px; border-radius: 12px; border: 1px dashed #3498db;">
-                <p style="margin: 0 0 10px 0; font-size: 0.95rem; color: #2980b9; font-weight: bold;">☁️ המערכת מגבה את תשובותיך אוטומטית בכל 40 שניות.</p>
+                <p style="margin: 0 0 10px 0; font-size: 0.95rem; color: #2980b9; font-weight: bold;">☁️ שים לב: מומלץ לשמור את ההתקדמות שלך במהלך הבחינה</p>
                 <button type="button" onclick="saveProgressToCloud(false)" id="btnCloudSave" style="background: #3498db; color: white; padding: 12px 25px; border: none; border-radius: 30px; font-size: 1.1rem; cursor: pointer; transition: 0.2s;">
-                    💾 שמירה יזומה לענן
+                    💾 שמור התקדמות בענן
                 </button>
             </div>
         `;
@@ -289,13 +289,6 @@ const HTMLBuilder = {
             document.getElementById('timerBadge').style.display='block';
             document.getElementById('highlighterTool').style.display='flex';
             examStarted=true; runTimer(); updateTimer();
-            
-            // תוספת: שמירה אוטומטית לענן כל 40 שניות
-            setInterval(() => {
-                if(examStarted && document.body.dataset.status !== 'submitted' && document.body.dataset.status !== 'grading') {
-                    saveProgressToCloud(false, true);
-                }
-            }, 40000);
         }
         function runTimer(){clearInterval(timerInterval);timerInterval=setInterval(()=>{totalTime--;updateTimer();if(totalTime<=0){clearInterval(timerInterval);document.getElementById('timesUpModal').style.display='flex';}},1000);}
         function updateTimer(){let m=Math.floor(totalTime/60),s=totalTime%60;document.getElementById('timerText').innerText=(m<10?'0'+m:m)+':'+(s<10?'0'+s:s);}
@@ -303,12 +296,9 @@ const HTMLBuilder = {
         function calcTotal(){ let t=0; document.querySelectorAll('.grade-input').forEach(i=>{ if(i.value) t += parseFloat(i.value); }); const display = document.getElementById('teacherCalculatedScore'); if(display) display.innerText = t; }
         
         // עבודה בענן (Firebase) מתוך המבחן
-        async function saveProgressToCloud(isSubmit = false, isAutoSave = false) {
+        async function saveProgressToCloud(isSubmit = false) {
             const btn = document.getElementById('btnCloudSave');
-            if(btn && !isSubmit) { 
-                btn.innerText = isAutoSave ? "☁️ גיבוי אוטומטי..." : "⏳ שומר נתונים לענן..."; 
-                btn.disabled = true; 
-            }
+            if(btn && !isSubmit) { btn.innerText = "⏳ שומר נתונים לענן..."; btn.disabled = true; }
 
             const answers = {};
             document.querySelectorAll('.student-ans').forEach(el => answers[el.id] = el.value);
@@ -331,9 +321,9 @@ const HTMLBuilder = {
                 const module = await import('./js/firebase-service.js');
                 await module.CloudService.saveSubmission(payload);
                 if(btn && !isSubmit) {
-                    btn.innerText = "✅ נשמר בהצלחה";
+                    btn.innerText = "✅ נשמר בהצלחה בענן";
                     btn.style.background = "#27ae60";
-                    setTimeout(() => { btn.innerText = "💾 שמירה יזומה לענן"; btn.style.background = "#3498db"; btn.disabled = false; }, 2000);
+                    setTimeout(() => { btn.innerText = "💾 שמור התקדמות בענן"; btn.style.background = "#3498db"; btn.disabled = false; }, 3000);
                 }
             } catch (err) {
                 console.error(err);
@@ -392,15 +382,7 @@ const HTMLBuilder = {
         }
 
         function enableGradingFromModal() { if(simpleHash(prompt('הכנס קוד מורה:'))==="${unlockCodeHash}") { document.getElementById('successModal').style.display='none'; enableGradingUI(); } else { alert('קוד שגוי'); } }
-        function enableGrading() { 
-             if(simpleHash(prompt('Code?'))==="${unlockCodeHash}") { enableGradingUI(); }
-        }
         function enableGradingUI() {
-            // ביטול הטיימר למורה
-            clearInterval(timerInterval);
-            const badge = document.getElementById('timerBadge');
-            if(badge) badge.style.display = 'none';
-
             document.querySelector('.teacher-controls').style.display='block';
             document.querySelectorAll('.grading-area').forEach(e=>e.style.display='block');
             document.querySelectorAll('.grade-input, .teacher-comment').forEach(e=>e.disabled=false);
@@ -467,9 +449,9 @@ const HTMLBuilder = {
         let isDragging = false, startX, startY, initialLeft, initialTop;
         handle.onmousedown = function(e) { e.preventDefault(); isDragging=true; startX=e.clientX; startY=e.clientY; initialLeft=tool.offsetLeft; initialTop=tool.offsetTop; document.onmouseup = function(){isDragging=false; document.onmouseup=null; document.onmousemove=null;}; document.onmousemove = function(e){if(!isDragging)return; tool.style.top=(initialTop+e.clientY-startY)+"px"; tool.style.left=(initialLeft+e.clientX-startX)+"px"; tool.style.right='auto';}; };
         function lockExam(){ clearInterval(timerInterval); document.getElementById('securityModal').style.display='flex'; }
-        function checkSec(){ if(!examStarted||document.body.dataset.status==='submitted'||document.body.dataset.status==='grading')return; if(document.hidden)lockExam(); }
+        function checkSec(){ if(!examStarted||document.body.dataset.status==='submitted')return; if(document.hidden)lockExam(); }
         document.addEventListener('visibilitychange',checkSec);
-        document.addEventListener('fullscreenchange', () => { if(!document.fullscreenElement && examStarted && document.body.dataset.status!=='submitted' && document.body.dataset.status!=='grading') lockExam(); });
+        document.addEventListener('fullscreenchange', () => { if(!document.fullscreenElement && examStarted && document.body.dataset.status!=='submitted') lockExam(); });
         function unlockExam(){ if(simpleHash(document.getElementById('teacherCodeInput').value)==="${unlockCodeHash}"){ document.getElementById('securityModal').style.display='none'; document.documentElement.requestFullscreen().catch(e=>console.log(e)); runTimer(); } else { alert('קוד שגוי'); } }
         function showExtensionInput() { document.getElementById('timesUpActions').style.display = 'none'; document.getElementById('extensionPanel').style.display = 'block'; }
         function cancelExtension() { document.getElementById('timesUpActions').style.display = 'block'; document.getElementById('extensionPanel').style.display = 'none'; document.getElementById('extTeacherCode').value = ''; }
