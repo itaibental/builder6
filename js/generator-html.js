@@ -1,30 +1,23 @@
 /**
  * HTMLBuilder
  */
-window.HTMLBuilder = {
+const HTMLBuilder = {
     build: function(studentName, questions, instructions, examTitle, logoData, solutionDataUrl, duration, unlockCodeHash, parts, teacherEmail, driveLink, projectData, theme) {
         
-        // --- מנגנוני הגנה למבחנים וטיוטות מגרסאות ישנות ---
-        const safeInstructions = (typeof instructions === 'string') ? { general: instructions, parts: {} } : (instructions || { general: '', parts: {} });
-        if (!safeInstructions.parts) safeInstructions.parts = {};
-        const safeParts = parts || [{ id: 'A', name: 'חלק ראשון' }];
-        const safeQuestions = questions || [];
-        const safeTheme = theme || { background: '#f4f6f8', header: '#2c3e50' };
+        const tabsHTML = parts.map((p, idx) => `<button class="tab-btn ${idx===0?'active':''}" onclick="showPart('${p.id}')">${p.name}</button>`).join('');
 
-        const tabsHTML = safeParts.map((p, idx) => `<button class="tab-btn ${idx===0?'active':''}" onclick="showPart('${p.id}')">${p.name}</button>`).join('');
-
-        const sectionsHTML = safeParts.map((p, idx) => {
-            const partQuestions = safeQuestions.filter(q => q.part === p.id || (!q.part && idx === 0)); // אם לשאלה אין פרק, היא תכנס לראשון
-            const partInstrHtml = safeInstructions.parts[p.id] ? `<div class="part-instructions">${safeInstructions.parts[p.id].replace(/\n/g, '<br>')}</div>` : '';
+        const sectionsHTML = parts.map((p, idx) => {
+            const partQuestions = questions.filter(q => q.part === p.id);
+            const partInstrHtml = instructions.parts[p.id] ? `<div class="part-instructions">${instructions.parts[p.id].replace(/\n/g, '<br>')}</div>` : '';
             
             let qHtml = '';
             if(partQuestions.length === 0) {
                 qHtml = '<p style="text-align:center; color:#95a5a6; padding:20px;">אין שאלות בחלק זה</p>';
             } else {
                 qHtml = partQuestions.map((q, qIdx) => {
-                    const embedSrc = window.Utils ? window.Utils.getVideoEmbedUrl(q.videoUrl, q.videoOptions) : '';
+                    const embedSrc = Utils.getVideoEmbedUrl(q.videoUrl, q.videoOptions);
                     let vid = embedSrc ? `<div class="video-wrapper"><div class="video-shield"></div><iframe sandbox="allow-scripts allow-same-origin allow-presentation" src="${embedSrc}" frameborder="0"></iframe></div>` : '';
-                    const imgSrc = window.Utils ? window.Utils.getImageSrc(q.imageUrl) : q.imageUrl;
+                    const imgSrc = Utils.getImageSrc(q.imageUrl);
                     let img = imgSrc ? `<div class="image-wrapper"><img src="${imgSrc}" alt="Question Image"></div>` : '';
 
                     let interactionHTML = '';
@@ -33,30 +26,27 @@ window.HTMLBuilder = {
 
                     if (q.subQuestions && q.subQuestions.length > 0) {
                         interactionHTML = q.subQuestions.map((sq, si) => {
-                            const label = (window.ExamState && window.ExamState.subLabels) ? window.ExamState.subLabels[si] : (si + 1);
+                            const label = ExamState.subLabels[si] || (si + 1);
                             const sqModelAns = sq.modelAnswer ? `<div class="model-answer-secret" style="display:none; margin-top:5px; background:#fff3cd; color:#856404; padding:5px; border-radius:4px; font-size:0.9em; border:1px solid #ffeeba;"><strong>מחוון (${label}'):</strong> <span class="model-ans-text-content">${sq.modelAnswer}</span></div>` : '';
                             
-                            const sqEmbedSrc = window.Utils ? window.Utils.getVideoEmbedUrl(sq.videoUrl, { showControls: true, modestBranding: true }) : '';
+                            const sqEmbedSrc = Utils.getVideoEmbedUrl(sq.videoUrl, { showControls: true, modestBranding: true });
                             let sqVid = sqEmbedSrc ? `<div class="video-wrapper"><div class="video-shield"></div><iframe sandbox="allow-scripts allow-same-origin allow-presentation" src="${sqEmbedSrc}" frameborder="0"></iframe></div>` : '';
-                            const sqImgSrc = window.Utils ? window.Utils.getImageSrc(sq.imageUrl) : sq.imageUrl;
+                            const sqImgSrc = Utils.getImageSrc(sq.imageUrl);
                             let sqImg = sqImgSrc ? `<div class="image-wrapper"><img src="${sqImgSrc}" alt="SubQ Image"></div>` : '';
 
                             return `
                             <div class="sub-question-block" data-points="${sq.points}" style="margin-top:20px; border-right:3px solid #eee; padding-right:15px;">
-                                <div class="sub-q-title" style="font-weight:bold; color:#3498db; margin-bottom:5px;">סעיף ${label}' (${sq.points || 0} נק')</div>
-                                <div class="sub-q-text" id="q-text-${q.id}-${si}">${sq.text || ''}</div>
+                                <div class="sub-q-title" style="font-weight:bold; color:#3498db; margin-bottom:5px;">סעיף ${label}' (${sq.points} נק')</div>
+                                <div class="sub-q-text" id="q-text-${q.id}-${si}">${sq.text}</div>
                                 ${sqImg}${sqVid}
                                 <div class="answer-area" style="margin-top:10px;">
-                                    <div class="textarea-wrapper">
-                                        <textarea class="student-ans" id="student-ans-${q.id}-${si}" placeholder="תשובה לסעיף ${label}'..." style="height:10vh;"></textarea>
-                                        <button type="button" class="mic-btn" onclick="toggleVoiceTyping('student-ans-${q.id}-${si}', this)" title="הקלדה קולית">🎤</button>
-                                    </div>
+                                    <textarea class="student-ans" id="student-ans-${q.id}-${si}" placeholder="תשובה לסעיף ${label}'..." style="height:10vh;"></textarea>
                                 </div>
                                 <div class="grading-area">
                                     <div style="display:flex; align-items:center; gap:1vw;">
                                         <label>ניקוד:</label>
-                                        <input type="number" class="grade-input" id="grade-input-${q.id}-${si}" min="0" max="${sq.points || 0}" oninput="calcTotal()" disabled>
-                                        <span class="grade-max">מתוך ${sq.points || 0}</span>
+                                        <input type="number" class="grade-input" id="grade-input-${q.id}-${si}" min="0" max="${sq.points}" oninput="calcTotal()" disabled>
+                                        <span class="grade-max">מתוך ${sq.points}</span>
                                     </div>
                                     <input type="text" class="teacher-comment" id="comment-input-${q.id}-${si}" placeholder="הערה מילולית..." disabled style="width: 100%; margin-top: 5px; padding: 5px; border: 1px solid #ddd; border-radius: 4px;">
                                     ${sqModelAns}
@@ -65,20 +55,13 @@ window.HTMLBuilder = {
                         }).join('');
                     } else {
                         modelAnsHtml = q.modelAnswer ? `<div class="model-answer-secret" style="display:none; margin-top:15px; background:#fff3cd; color:#856404; padding:10px; border-radius:5px; border:1px solid #ffeeba;"><strong>🔑 תשובה לדוגמא (למורה):</strong><br><div style="white-space:pre-wrap; margin-top:5px;" id="model-ans-text-${q.id}" class="model-ans-text-content">${q.modelAnswer}</div></div>` : '';
-                        interactionHTML = `
-                        <div class="answer-area">
-                            <label>תשובה:</label>
-                            <div class="textarea-wrapper">
-                                <textarea class="student-ans" id="student-ans-${q.id}" placeholder="כתוב את תשובתך כאן..."></textarea>
-                                <button type="button" class="mic-btn" onclick="toggleVoiceTyping('student-ans-${q.id}', this)" title="הקלדה קולית">🎤</button>
-                            </div>
-                        </div>`;
+                        interactionHTML = `<div class="answer-area"><label>תשובה:</label><textarea class="student-ans" id="student-ans-${q.id}" placeholder="כתוב את תשובתך כאן..."></textarea></div>`;
                         gradingHTML = `
                         <div class="grading-area">
                             <div style="display:flex; align-items:center; gap:1vw;">
                                 <label>ניקוד:</label>
-                                <input type="number" class="grade-input" id="grade-input-${q.id}" min="0" max="${q.points || 0}" oninput="calcTotal()" disabled>
-                                <span class="grade-max">מתוך ${q.points || 0}</span>
+                                <input type="number" class="grade-input" id="grade-input-${q.id}" min="0" max="${q.points}" oninput="calcTotal()" disabled>
+                                <span class="grade-max">מתוך ${q.points}</span>
                             </div>
                             <input type="text" class="teacher-comment" id="comment-input-${q.id}" placeholder="הערה מילולית למורה..." disabled style="width: 100%; margin-top: 5px; padding: 5px; border: 1px solid #ddd; border-radius: 4px;">
                             ${modelAnsHtml}
@@ -87,10 +70,10 @@ window.HTMLBuilder = {
 
                     return `<div class="q-block" id="question-block-${q.id}">
                         <div class="q-header">
-                            <span class="q-points">(${q.points || 0} נק' סה"כ)</span>
+                            <span class="q-points">(${q.points} נק' סה"כ)</span>
                             <strong id="q-label-${q.id}">שאלה ${qIdx+1}:</strong>
                         </div>
-                        <div class="q-content" id="q-main-text-${q.id}">${q.text || ''}</div>
+                        <div class="q-content" id="q-main-text-${q.id}">${q.text}</div>
                         ${img}${vid}
                         ${interactionHTML}
                         ${gradingHTML}
@@ -98,16 +81,16 @@ window.HTMLBuilder = {
                 }).join('');
             }
             return `<div id="part-${p.id}" class="exam-section ${idx===0?'active':''}">
-                <h2 style="color:${safeTheme.header}; border-bottom:0.3vh solid #3498db; font-weight: 700; padding-bottom:1vh; margin-bottom:3vh;">${p.name}</h2>
+                <h2 style="color:${theme ? theme.header : '#2c3e50'}; border-bottom:0.3vh solid #3498db; font-weight: 700; padding-bottom:1vh; margin-bottom:3vh;">${p.name}</h2>
                 ${partInstrHtml}${qHtml}</div>`;
         }).join('');
 
-        const globalInstructionsHTML = safeInstructions.general ? `<div class="instructions-box global-instructions"><h3>הנחיות כלליות</h3><div class="instructions-text">${safeInstructions.general.replace(/\n/g, '<br>')}</div></div>` : '';
+        const globalInstructionsHTML = instructions.general ? `<div class="instructions-box global-instructions"><h3>הנחיות כלליות</h3><div class="instructions-text">${instructions.general.replace(/\n/g, '<br>')}</div></div>` : '';
         const logoHTML = logoData ? `<img src="${logoData}" alt="Logo" class="school-logo">` : '';
         const embeddedProjectData = projectData ? `<script type="application/json" id="exam-engine-data">${JSON.stringify(projectData).replace(/<\/script>/g, '<\\/script>')}</script>` : '';
 
-        const bgColor = safeTheme.background;
-        const hdrColor = safeTheme.header;
+        const bgColor = theme && theme.background ? theme.background : '#f4f6f8';
+        const hdrColor = theme && theme.header ? theme.header : '#2c3e50';
 
         const cloudSaveArea = `
             <div style="text-align:center; margin: 30px 0; background: #ebf5fb; padding: 20px; border-radius: 12px; border: 1px dashed #3498db;">
@@ -136,14 +119,6 @@ window.HTMLBuilder = {
         .video-shield { position: absolute; top: 0; left: 0; width: 100%; height: 15%; z-index: 10; background: transparent; }
         .image-wrapper { text-align: center; margin: 20px 0; width: 100%; }
         .image-wrapper img { max-width: 100%; height: auto; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); display: block; margin: 0 auto; }
-        
-        .textarea-wrapper { position: relative; width: 100%; margin-top: 5px; }
-        .textarea-wrapper textarea { width: 100%; padding-left: 50px !important; box-sizing: border-box; }
-        .mic-btn { position: absolute; top: 10px; left: 10px; background: #fff; border: 1px solid #ddd; border-radius: 50%; width: 35px; height: 35px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; transition: 0.2s; z-index: 5; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-        .mic-btn:hover { background: #f0f0f0; transform: scale(1.05); }
-        .mic-btn.recording { background: #e74c3c; border-color: #c0392b; animation: pulse-mic 1s infinite; }
-        @keyframes pulse-mic { 0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(231, 76, 60, 0.7); } 70% { transform: scale(1.1); box-shadow: 0 0 0 10px rgba(231, 76, 60, 0); } 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(231, 76, 60, 0); } }
-        
         .teacher-controls { background: #fdf2e9; padding: 15px; border: 1px solid #f39c12; border-radius: 8px; margin-bottom: 20px; }
         .grading-area { display: none; margin-top: 15px; background: #fafafa; padding: 10px; border-top: 2px solid #bdc3c7; }
         .grade-input { width: 60px; padding: 5px; text-align: center; border: 1px solid #ccc; border-radius: 4px; font-weight: bold; }
@@ -155,6 +130,7 @@ window.HTMLBuilder = {
         .sound-btn { background: #3498db; border: none; padding: 10px 25px; border-radius: 5px; color: white; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; margin: 0 auto; font-size: 1.1em; transition: background 0.2s, transform 0.1s; width: auto; }
         .sound-btn:hover { background: #2980b9; }
         .sound-btn.playing { background: #e74c3c; animation: pulse 1s infinite; }
+        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
         #highlighterTool { position: fixed; top: 150px; right: 20px; width: 50px; background: #fff; box-shadow: 0 4px 15px rgba(0,0,0,0.2); border-radius: 30px; padding: 15px 0; display: flex; flex-direction: column; align-items: center; gap: 12px; z-index: 10000; border: 1px solid #ddd; transition: opacity 0.3s; display: none; }
         .color-btn { width: 30px; height: 30px; border-radius: 50%; cursor: pointer; border: 2px solid #fff; box-shadow: 0 2px 5px rgba(0,0,0,0.1); transition: transform 0.2s; }
         .color-btn.active { border-color: #333; transform: scale(1.2); box-shadow: 0 0 0 2px #333; }
@@ -186,7 +162,7 @@ window.HTMLBuilder = {
                     <li>⏳ <strong>משך הבחינה:</strong> ${duration} דקות.</li>
                     <li>🖥️ <strong>מצב מסך:</strong> הבחינה מתבצעת במסך מלא בלבד.</li>
                     <li>🚫 <strong>אזהרה:</strong> יציאה ממסך מלא או מעבר לחלון אחר ינעלו את המבחן באופן מיידי!</li>
-                    ${safeInstructions.general ? '<li style="margin-top:10px; padding-top:10px; border-top:1px solid rgba(255,255,255,0.2);"><strong>הנחיות מיוחדות:</strong><br>' + safeInstructions.general.replace(/\n/g, '<br>') + '</li>' : ''}
+                    ${instructions.general ? '<li style="margin-top:10px; padding-top:10px; border-top:1px solid rgba(255,255,255,0.2);"><strong>הנחיות מיוחדות:</strong><br>' + instructions.general.replace(/\n/g, '<br>') + '</li>' : ''}
                 </ul>
             </div>
             
@@ -279,88 +255,8 @@ window.HTMLBuilder = {
                     }
                 });
                 document.querySelector('.student-submit-area').style.display='none';
-                document.querySelectorAll('.mic-btn').forEach(btn => btn.style.display='none');
             }
         };
-        
-        let recognition = null;
-        let activeMicBtn = null;
-        let activeTextareaId = null;
-
-        function initSpeechRecognition() {
-            window.SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-            if (!window.SpeechRecognition) {
-                alert("הדפדפן שלך אינו תומך בהקלדה קולית. אנא השתמש בדפדפן Google Chrome.");
-                return null;
-            }
-            const rec = new SpeechRecognition();
-            rec.lang = 'he-IL';
-            rec.continuous = true;
-            rec.interimResults = false;
-            
-            rec.onresult = (event) => {
-                let finalTranscript = '';
-                for (let i = event.resultIndex; i < event.results.length; ++i) {
-                    if (event.results[i].isFinal) {
-                        finalTranscript += event.results[i][0].transcript;
-                    }
-                }
-                const textarea = document.getElementById(activeTextareaId);
-                if (textarea && finalTranscript) {
-                    const cursorPos = textarea.selectionStart;
-                    const textBefore = textarea.value.substring(0, cursorPos);
-                    const textAfter  = textarea.value.substring(cursorPos, textarea.value.length);
-                    textarea.value = textBefore + finalTranscript + " " + textAfter;
-                    textarea.selectionStart = textarea.selectionEnd = cursorPos + finalTranscript.length + 1;
-                    
-                    if(typeof saveProgressToCloud === 'function' && document.body.dataset.status !== 'grading') {
-                        saveProgressToCloud(false, true);
-                    }
-                }
-            };
-            
-            rec.onerror = (event) => { console.error("Speech error", event.error); stopVoiceTyping(); };
-            rec.onend = () => { stopVoiceTyping(); };
-            return rec;
-        }
-
-        function toggleVoiceTyping(textareaId, btnEl) {
-            if(document.body.dataset.status === 'submitted' || document.body.dataset.status === 'grading') return;
-
-            if (activeMicBtn === btnEl) {
-                stopVoiceTyping();
-                return;
-            }
-            if (recognition) {
-                stopVoiceTyping();
-            }
-            
-            activeTextareaId = textareaId;
-            activeMicBtn = btnEl;
-            btnEl.classList.add('recording');
-            btnEl.innerText = "🔴";
-
-            if (!recognition) recognition = initSpeechRecognition();
-            if (recognition) {
-                try { recognition.start(); } catch(e) { console.error(e); }
-            } else {
-                btnEl.classList.remove('recording');
-                btnEl.innerText = "🎤";
-            }
-        }
-
-        function stopVoiceTyping() {
-            if (recognition) {
-                try { recognition.stop(); } catch(e){}
-            }
-            if (activeMicBtn) {
-                activeMicBtn.classList.remove('recording');
-                activeMicBtn.innerText = "🎤";
-            }
-            activeMicBtn = null;
-            activeTextareaId = null;
-        }
-
         let audioCtx = null, isPlayingSound = false, soundLoopTimeout;
         function toggleSoundCheck() {
             const btn = document.getElementById('soundCheckBtn');
@@ -394,6 +290,7 @@ window.HTMLBuilder = {
             document.getElementById('highlighterTool').style.display='flex';
             examStarted=true; runTimer(); updateTimer();
             
+            // תוספת: שמירה אוטומטית לענן כל 40 שניות
             setInterval(() => {
                 if(examStarted && document.body.dataset.status !== 'submitted' && document.body.dataset.status !== 'grading') {
                     saveProgressToCloud(false, true);
@@ -405,6 +302,7 @@ window.HTMLBuilder = {
         function showPart(id){document.querySelectorAll('.exam-section').forEach(e=>e.classList.remove('active'));document.getElementById('part-'+id).classList.add('active');document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));event.target.classList.add('active');}
         function calcTotal(){ let t=0; document.querySelectorAll('.grade-input').forEach(i=>{ if(i.value) t += parseFloat(i.value); }); const display = document.getElementById('teacherCalculatedScore'); if(display) display.innerText = t; }
         
+        // עבודה בענן (Firebase) מתוך המבחן
         async function saveProgressToCloud(isSubmit = false, isAutoSave = false) {
             const btn = document.getElementById('btnCloudSave');
             if(btn && !isSubmit) { 
@@ -478,7 +376,6 @@ window.HTMLBuilder = {
             if(document.fullscreenElement) document.exitFullscreen();
             clearInterval(timerInterval); document.getElementById('timerBadge').style.display='none';
             document.getElementById('highlighterTool').style.display='none';
-            stopVoiceTyping();
             
             document.querySelectorAll('input,textarea').forEach(e=>{
                 e.setAttribute('value',e.value); 
@@ -487,9 +384,10 @@ window.HTMLBuilder = {
                 } 
             });
             document.querySelectorAll('textarea').forEach(t=>t.innerHTML=t.value);
-            document.querySelectorAll('.mic-btn').forEach(btn => btn.style.display='none');
             
+            // שולח לענן כ"הוגש"
             await saveProgressToCloud(true);
+            
             document.getElementById('successModal').style.display='flex';
         }
 
@@ -498,11 +396,10 @@ window.HTMLBuilder = {
              if(simpleHash(prompt('Code?'))==="${unlockCodeHash}") { enableGradingUI(); }
         }
         function enableGradingUI() {
+            // ביטול הטיימר למורה
             clearInterval(timerInterval);
             const badge = document.getElementById('timerBadge');
             if(badge) badge.style.display = 'none';
-            stopVoiceTyping();
-            document.querySelectorAll('.mic-btn').forEach(btn => btn.style.display='none');
 
             document.querySelector('.teacher-controls').style.display='block';
             document.querySelectorAll('.grading-area').forEach(e=>e.style.display='block');
@@ -549,8 +446,8 @@ window.HTMLBuilder = {
             document.querySelectorAll('.color-btn').forEach(b => b.classList.remove('active'));
             if(btn) btn.classList.add('active');
             if(color && color !== 'transparent') {
-                const svg = '<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32"><path fill="' + color + '" stroke="black" stroke-width="1" d="M28.06 6.94L25.06 3.94a2.003 2.003 0 0 0-2.83 0l-16.17 16.17a2.003 2.003 0 0 0-.58 1.41V26h4.48c.53 0 1.04-.21 1.41-.59l16.17-16.17c.79-.78.79-2.05.52-2.3zM8.5 24H7v-1.5l14.5-14.5 1.5 1.5L8.5 24z"/><path fill="' + color + '" d="M4 28l4-4H4z"/></svg>';
-                document.body.style.cursor = "url('data:image/svg+xml;base64," + btoa(svg) + "') 0 32, auto";
+                const svg = \`<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32"><path fill="\${color}" stroke="black" stroke-width="1" d="M28.06 6.94L25.06 3.94a2.003 2.003 0 0 0-2.83 0l-16.17 16.17a2.003 2.003 0 0 0-.58 1.41V26h4.48c.53 0 1.04-.21 1.41-.59l16.17-16.17c.79-.78.79-2.05.52-2.3zM8.5 24H7v-1.5l14.5-14.5 1.5 1.5L8.5 24z"/><path fill="\${color}" d="M4 28l4-4H4z"/></svg>\`;
+                document.body.style.cursor = \`url('data:image/svg+xml;base64,\${btoa(svg)}') 0 32, auto\`;
             } else { document.body.style.cursor = color === 'transparent' ? 'crosshair' : 'default'; }
         }
         document.addEventListener('mouseup', () => {
@@ -569,7 +466,7 @@ window.HTMLBuilder = {
         const tool = document.getElementById('highlighterTool'), handle = document.getElementById('hlDragHandle');
         let isDragging = false, startX, startY, initialLeft, initialTop;
         handle.onmousedown = function(e) { e.preventDefault(); isDragging=true; startX=e.clientX; startY=e.clientY; initialLeft=tool.offsetLeft; initialTop=tool.offsetTop; document.onmouseup = function(){isDragging=false; document.onmouseup=null; document.onmousemove=null;}; document.onmousemove = function(e){if(!isDragging)return; tool.style.top=(initialTop+e.clientY-startY)+"px"; tool.style.left=(initialLeft+e.clientX-startX)+"px"; tool.style.right='auto';}; };
-        function lockExam(){ clearInterval(timerInterval); stopVoiceTyping(); document.getElementById('securityModal').style.display='flex'; }
+        function lockExam(){ clearInterval(timerInterval); document.getElementById('securityModal').style.display='flex'; }
         function checkSec(){ if(!examStarted||document.body.dataset.status==='submitted'||document.body.dataset.status==='grading')return; if(document.hidden)lockExam(); }
         document.addEventListener('visibilitychange',checkSec);
         document.addEventListener('fullscreenchange', () => { if(!document.fullscreenElement && examStarted && document.body.dataset.status!=='submitted' && document.body.dataset.status!=='grading') lockExam(); });
