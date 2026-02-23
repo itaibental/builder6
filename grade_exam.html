@@ -34,21 +34,34 @@
                 const exam = await CloudService.getExam(sub.examID);
                 if(!exam || !exam.htmlContent) return alert('תוכן המבחן המקורי לא נמצא במאגר.');
 
-                // כותבים מחדש את הדף עם ה-HTML המלא של המבחן
                 document.open();
                 document.write(exam.htmlContent);
                 document.close();
 
-                // ממתינים לטעינת ה-DOM של המבחן
                 setTimeout(() => {
                     localStorage.setItem('grading_studentID', sub.studentID);
                     localStorage.setItem('grading_examID', sub.examID);
+
+                    // 1. הגדרת מצב בדיקה באופן גורף
+                    document.body.dataset.status = 'grading';
+
+                    // 2. ביטול אקטיבי של הטיימר והסתרת מסך הפתיחה (עבור מבחנים ישנים)
+                    if (typeof window.timerInterval !== 'undefined') clearInterval(window.timerInterval);
+                    
+                    const timerBadge = document.getElementById('timerBadge');
+                    if (timerBadge) timerBadge.style.display = 'none';
+                    
+                    const startScrn = document.getElementById('startScreen');
+                    if (startScrn) startScrn.style.display = 'none';
+                    
+                    const mainCont = document.getElementById('mainContainer');
+                    if (mainCont) mainCont.style.filter = 'none';
 
                     // שיבוץ שם התלמיד
                     const nameField = document.getElementById('studentNameField');
                     if (nameField) nameField.value = sub.studentName || sub.studentID;
 
-                    // שיבוץ תשובות התלמיד
+                    // שיבוץ תשובות
                     if (sub.answers) {
                         for (const [id, val] of Object.entries(sub.answers)) {
                             const el = document.getElementById(id);
@@ -56,7 +69,7 @@
                         }
                     }
 
-                    // שיבוץ ציונים קודמים (אם נבדק חלקית)
+                    // שיבוץ ציונים קודמים
                     if (sub.teacherGrades) {
                         for (const [id, val] of Object.entries(sub.teacherGrades)) {
                             const el = document.getElementById(id);
@@ -70,12 +83,9 @@
                         }
                     }
 
-                    // הפעלת ממשק הבדיקה של המורה וחישוב ציון 
                     if (typeof window.enableGradingUI === 'function') {
                         window.enableGradingUI();
                         if(typeof window.calcTotal === 'function') window.calcTotal();
-                    } else {
-                        document.body.dataset.status = 'grading';
                     }
                     
                     document.title = `בדיקה: ${sub.studentName || 'תלמיד'}`;
