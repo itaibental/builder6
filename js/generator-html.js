@@ -257,8 +257,6 @@ window.HTMLBuilder = {
             <div class="tabs">${tabsHTML}</div>
             <form id="examForm">${sectionsHTML}</form>
             
-            <div id="teacherSolutionContainer" style="display:none;margin-top:40px;border-top:2px dashed orange;padding-top:20px;"><h2>קובץ פתרון</h2><iframe id="solutionFrame" style="width:100%;height:600px;border:1px solid #ddd;"></iframe></div>
-            
             <div style="text-align:center;margin-top:50px;border-top:1px solid #eee;padding-top:20px;">
                 <div class="student-submit-area"><br><button onclick="submitExam()" style="background:#27ae60;color:white;padding:15px 30px;font-size:1.2em;border:none;border-radius:30px;font-weight:bold;">הגש בחינה סופית</button></div>
             </div>
@@ -497,12 +495,10 @@ window.HTMLBuilder = {
              if(simpleHash(prompt('Code?'))==="${unlockCodeHash}") { enableGradingUI(); }
         }
         function enableGradingUI() {
-            // ביטול מוחלט של הטיימר במסך המורה
             clearInterval(timerInterval);
             const badge = document.getElementById('timerBadge');
             if(badge) badge.style.display = 'none';
             
-            // העלמת מסך הפתיחה
             const startScrn = document.getElementById('startScreen');
             if(startScrn) startScrn.style.display = 'none';
             
@@ -520,7 +516,6 @@ window.HTMLBuilder = {
             document.body.dataset.status = 'grading';
             document.querySelectorAll('.exam-section').forEach(e=>e.style.display='block');
             document.querySelector('.tabs').style.display='none';
-            if("${solutionDataUrl}"){ document.getElementById('teacherSolutionContainer').style.display='block'; document.getElementById('solutionFrame').src="${solutionDataUrl}"; }
         }
         function exportToDoc() {
             const studentName = document.getElementById('studentNameField').value || 'תלמיד';
