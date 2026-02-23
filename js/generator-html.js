@@ -1,15 +1,9 @@
-בטח, הנה הקוד המלא של הקובץ **`js/generator-html.js`** הכולל את מנגנון ההקלדה הקולית (אייקון המיקרופון ליד כל תיבת טקסט), השמירה האוטומטית לענן וההגנות שמנעו קריסות קודם לכן.
-
-העתק את כל הקוד הבא והדבק אותו לתוך הקובץ `js/generator-html.js` בתיקיית הפרויקט שלך (החלף את התוכן הקיים):
-
-```javascript
 /**
  * HTMLBuilder
  */
 window.HTMLBuilder = {
     build: function(studentName, questions, instructions, examTitle, logoData, solutionDataUrl, duration, unlockCodeHash, parts, teacherEmail, driveLink, projectData, theme) {
         
-        // --- מנגנוני הגנה למבחנים וטיוטות מגרסאות ישנות ---
         const safeInstructions = (typeof instructions === 'string') ? { general: instructions, parts: {} } : (instructions || { general: '', parts: {} });
         if (!safeInstructions.parts) safeInstructions.parts = {};
         const safeParts = parts || [{ id: 'A', name: 'חלק ראשון' }];
@@ -142,7 +136,6 @@ window.HTMLBuilder = {
         .image-wrapper { text-align: center; margin: 20px 0; width: 100%; }
         .image-wrapper img { max-width: 100%; height: auto; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); display: block; margin: 0 auto; }
         
-        /* עיצוב המיקרופון וההקלדה הקולית */
         .textarea-wrapper { position: relative; width: 100%; margin-top: 5px; }
         .textarea-wrapper textarea { width: 100%; padding-left: 50px !important; box-sizing: border-box; }
         .mic-btn { position: absolute; top: 10px; left: 10px; background: #fff; border: 1px solid #ddd; border-radius: 50%; width: 35px; height: 35px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; transition: 0.2s; z-index: 5; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
@@ -289,7 +282,6 @@ window.HTMLBuilder = {
             }
         };
         
-        // --- מערכת זיהוי דיבור (Web Speech API) ---
         let recognition = null;
         let activeMicBtn = null;
         let activeTextareaId = null;
@@ -320,7 +312,6 @@ window.HTMLBuilder = {
                     textarea.value = textBefore + finalTranscript + " " + textAfter;
                     textarea.selectionStart = textarea.selectionEnd = cursorPos + finalTranscript.length + 1;
                     
-                    // שמירה לענן אוטומטית אחרי כל הקלטה
                     if(typeof saveProgressToCloud === 'function' && document.body.dataset.status !== 'grading') {
                         saveProgressToCloud(false, true);
                     }
@@ -368,7 +359,6 @@ window.HTMLBuilder = {
             activeMicBtn = null;
             activeTextareaId = null;
         }
-        // ------------------------------------------
 
         let audioCtx = null, isPlayingSound = false, soundLoopTimeout;
         function toggleSoundCheck() {
@@ -403,7 +393,6 @@ window.HTMLBuilder = {
             document.getElementById('highlighterTool').style.display='flex';
             examStarted=true; runTimer(); updateTimer();
             
-            // שמירה אוטומטית לענן כל 40 שניות
             setInterval(() => {
                 if(examStarted && document.body.dataset.status !== 'submitted' && document.body.dataset.status !== 'grading') {
                     saveProgressToCloud(false, true);
@@ -488,7 +477,7 @@ window.HTMLBuilder = {
             if(document.fullscreenElement) document.exitFullscreen();
             clearInterval(timerInterval); document.getElementById('timerBadge').style.display='none';
             document.getElementById('highlighterTool').style.display='none';
-            stopVoiceTyping(); // עצירת הקלטה אם פועלת
+            stopVoiceTyping();
             
             document.querySelectorAll('input,textarea').forEach(e=>{
                 e.setAttribute('value',e.value); 
@@ -508,9 +497,18 @@ window.HTMLBuilder = {
              if(simpleHash(prompt('Code?'))==="${unlockCodeHash}") { enableGradingUI(); }
         }
         function enableGradingUI() {
+            // ביטול מוחלט של הטיימר במסך המורה
             clearInterval(timerInterval);
             const badge = document.getElementById('timerBadge');
             if(badge) badge.style.display = 'none';
+            
+            // העלמת מסך הפתיחה
+            const startScrn = document.getElementById('startScreen');
+            if(startScrn) startScrn.style.display = 'none';
+            
+            const mainCont = document.getElementById('mainContainer');
+            if(mainCont) mainCont.style.filter = 'none';
+            
             stopVoiceTyping();
             document.querySelectorAll('.mic-btn').forEach(btn => btn.style.display='none');
 
@@ -590,5 +588,3 @@ window.HTMLBuilder = {
         <\/script></body></html>`;
     }
 };
-
-```
