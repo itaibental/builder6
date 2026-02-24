@@ -4,11 +4,15 @@
 window.HTMLBuilder = {
     build: function(studentName, questions, instructions, examTitle, logoData, solutionDataUrl, duration, unlockCodeHash, parts, teacherEmail, driveLink, projectData, theme) {
         
+        // --- מנגנוני הגנה למבחנים וטיוטות מגרסאות ישנות ---
         const safeInstructions = (typeof instructions === 'string') ? { general: instructions, parts: {} } : (instructions || { general: '', parts: {} });
         if (!safeInstructions.parts) safeInstructions.parts = {};
         const safeParts = parts || [{ id: 'A', name: 'חלק ראשון' }];
         const safeQuestions = questions || [];
         const safeTheme = theme || { background: '#f4f6f8', header: '#2c3e50' };
+
+        // תיקון קריאת קבצי המולטימדיה (Utils)
+        const myUtils = (typeof Utils !== 'undefined') ? Utils : (window.Utils || null);
 
         const tabsHTML = safeParts.map((p, idx) => `<button class="tab-btn ${idx===0?'active':''}" onclick="showPart('${p.id}')">${p.name}</button>`).join('');
 
@@ -21,9 +25,11 @@ window.HTMLBuilder = {
                 qHtml = '<p style="text-align:center; color:#95a5a6; padding:20px;">אין שאלות בחלק זה</p>';
             } else {
                 qHtml = partQuestions.map((q, qIdx) => {
-                    const embedSrc = window.Utils ? window.Utils.getVideoEmbedUrl(q.videoUrl, q.videoOptions) : '';
-                    let vid = embedSrc ? `<div class="video-wrapper"><div class="video-shield"></div><iframe sandbox="allow-scripts allow-same-origin allow-presentation" src="${embedSrc}" frameborder="0"></iframe></div>` : '';
-                    const imgSrc = window.Utils ? window.Utils.getImageSrc(q.imageUrl) : q.imageUrl;
+                    // שליפת וידאו ותמונה - מתוקן
+                    const embedSrc = (myUtils && q.videoUrl) ? myUtils.getVideoEmbedUrl(q.videoUrl, q.videoOptions) : '';
+                    let vid = embedSrc ? `<div class="video-wrapper"><div class="video-shield"></div><iframe src="${embedSrc}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div>` : '';
+                    
+                    const imgSrc = (myUtils && q.imageUrl) ? myUtils.getImageSrc(q.imageUrl) : (q.imageUrl || '');
                     let img = imgSrc ? `<div class="image-wrapper"><img src="${imgSrc}" alt="Question Image"></div>` : '';
 
                     let interactionHTML = '';
@@ -35,9 +41,11 @@ window.HTMLBuilder = {
                             const label = (window.ExamState && window.ExamState.subLabels) ? window.ExamState.subLabels[si] : (si + 1);
                             const sqModelAns = sq.modelAnswer ? `<div class="model-answer-secret" style="display:none; margin-top:5px; background:#fff3cd; color:#856404; padding:5px; border-radius:4px; font-size:0.9em; border:1px solid #ffeeba;"><strong>מחוון (${label}'):</strong> <span class="model-ans-text-content">${sq.modelAnswer}</span></div>` : '';
                             
-                            const sqEmbedSrc = window.Utils ? window.Utils.getVideoEmbedUrl(sq.videoUrl, { showControls: true, modestBranding: true }) : '';
-                            let sqVid = sqEmbedSrc ? `<div class="video-wrapper"><div class="video-shield"></div><iframe sandbox="allow-scripts allow-same-origin allow-presentation" src="${sqEmbedSrc}" frameborder="0"></iframe></div>` : '';
-                            const sqImgSrc = window.Utils ? window.Utils.getImageSrc(sq.imageUrl) : sq.imageUrl;
+                            // שליפת וידאו ותמונה עבור תתי-שאלות - מתוקן
+                            const sqEmbedSrc = (myUtils && sq.videoUrl) ? myUtils.getVideoEmbedUrl(sq.videoUrl, { showControls: true, modestBranding: true }) : '';
+                            let sqVid = sqEmbedSrc ? `<div class="video-wrapper"><div class="video-shield"></div><iframe src="${sqEmbedSrc}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div>` : '';
+                            
+                            const sqImgSrc = (myUtils && sq.imageUrl) ? myUtils.getImageSrc(sq.imageUrl) : (sq.imageUrl || '');
                             let sqImg = sqImgSrc ? `<div class="image-wrapper"><img src="${sqImgSrc}" alt="SubQ Image"></div>` : '';
 
                             return `
