@@ -49,7 +49,7 @@ window.HTMLBuilder = {
                             let sqImg = sqImgSrc ? `<div class="image-wrapper"><img src="${sqImgSrc}" alt="SubQ Image"></div>` : '';
 
                             return `
-                            <div class="sub-question-block" data-points="${sq.points}" style="margin-top:20px; border-right:3px solid #eee; padding-right:15px;">
+                            <div class="sub-question-block" data-points="${sq.points}" style="border-right:3px solid #eee; padding-right:15px;">
                                 <div class="sub-q-title" style="font-weight:bold; color:#3498db; margin-bottom:5px;">סעיף ${label}' (${sq.points || 0} נק')</div>
                                 <div class="sub-q-text" id="q-text-${q.id}-${si}">${sq.text || ''}</div>
                                 ${sqImg}${sqVid}
@@ -137,7 +137,7 @@ window.HTMLBuilder = {
         .exam-section.active{display:block;}
         .part-instructions { background: #e8f6f3; border-right: 4px solid #1abc9c; padding: 15px; margin-bottom: 20px; border-radius: 4px; color: #16a085; font-size: 1.05em; line-height: 1.5; display: block !important; width: 100%; box-sizing: border-box; }
         .school-logo { display: block; margin: 0 auto 20px auto; max-width: 200px; max-height: 150px; width: auto; height: auto; object-fit: contain; }
-        .q-content, .sub-q-text, .instructions-text, .part-instructions { user-select: text !important; }
+        .q-content, .sub-q-text, .instructions-text, .part-instructions { user-select: text !important; white-space: pre-wrap; }
         .video-wrapper { position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; width: 100%; max-width: 100%; margin: 20px 0; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
         .video-wrapper iframe { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: 0; }
         .video-shield { position: absolute; top: 0; left: 0; width: 100%; height: 15%; z-index: 10; background: transparent; }
@@ -153,6 +153,9 @@ window.HTMLBuilder = {
         
         .teacher-controls { background: #fdf2e9; padding: 15px; border: 1px solid #f39c12; border-radius: 8px; margin-bottom: 20px; }
         .grading-area { display: none; margin-top: 15px; background: #fafafa; padding: 10px; border-top: 2px solid #bdc3c7; }
+        .q-block { margin-bottom: 50px; padding-bottom: 30px; border-bottom: 2px solid #eee; }
+        .q-block:last-child { border-bottom: none; }
+        .sub-question-block { margin-top: 30px !important; padding-top: 20px; border-top: 1px dashed #ddd; }
         .grade-input { width: 60px; padding: 5px; text-align: center; border: 1px solid #ccc; border-radius: 4px; font-weight: bold; }
         .teacher-comment { background: #fff; }
         .model-answer-secret { margin-top: 10px; border: 1px dashed #f39c12; padding: 10px; background: #fffdf5; border-radius: 4px; font-size: 0.9em; color: #555; }
