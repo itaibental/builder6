@@ -49,7 +49,7 @@ window.HTMLBuilder = {
                             let sqImg = sqImgSrc ? `<div class="image-wrapper"><img src="${sqImgSrc}" alt="SubQ Image"></div>` : '';
 
                             return `
-                            <div class="sub-question-block" data-points="${sq.points}" style="margin-top:20px; border-right:3px solid #eee; padding-right:15px;">
+                            <div class="sub-question-block" data-points="${sq.points}" style="border-right:3px solid #eee; padding-right:15px;">
                                 <div class="sub-q-title" style="font-weight:bold; color:#3498db; margin-bottom:5px;">סעיף ${label}' (${sq.points || 0} נק')</div>
                                 <div class="sub-q-text" id="q-text-${q.id}-${si}">${sq.text || ''}</div>
                                 ${sqImg}${sqVid}
@@ -125,7 +125,7 @@ window.HTMLBuilder = {
             </div>
         `;
 
-        return `<!DOCTYPE html><html lang="he" dir="rtl"><head><meta charset="UTF-8"><title>מבחן - ${studentName}</title><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;700&display=swap"><style>
+        return `<!DOCTYPE html><html lang="he" dir="rtl"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>מבחן - ${studentName}</title><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;700&display=swap"><style>
         :root{--primary:#2c3e50;--accent:#3498db;--success:#27ae60;--danger:#e74c3c;}
         body{font-family:'Rubik',sans-serif;background:${bgColor};margin:0;padding:2%;color:#2c3e50;font-size:18px;line-height:1.5; user-select: text;} 
         .container{max-width:800px;margin:0 auto;background:white;padding:5%;border-radius:1em;box-shadow:0 1vh 3vh rgba(0,0,0,0.05);}
@@ -137,7 +137,7 @@ window.HTMLBuilder = {
         .exam-section.active{display:block;}
         .part-instructions { background: #e8f6f3; border-right: 4px solid #1abc9c; padding: 15px; margin-bottom: 20px; border-radius: 4px; color: #16a085; font-size: 1.05em; line-height: 1.5; display: block !important; width: 100%; box-sizing: border-box; }
         .school-logo { display: block; margin: 0 auto 20px auto; max-width: 200px; max-height: 150px; width: auto; height: auto; object-fit: contain; }
-        .q-content, .sub-q-text, .instructions-text, .part-instructions { user-select: text !important; }
+        .q-content, .sub-q-text, .instructions-text, .part-instructions { user-select: text !important; white-space: pre-wrap; }
         .video-wrapper { position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; width: 100%; max-width: 100%; margin: 20px 0; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
         .video-wrapper iframe { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: 0; }
         .video-shield { position: absolute; top: 0; left: 0; width: 100%; height: 15%; z-index: 10; background: transparent; }
@@ -153,10 +153,13 @@ window.HTMLBuilder = {
         
         .teacher-controls { background: #fdf2e9; padding: 15px; border: 1px solid #f39c12; border-radius: 8px; margin-bottom: 20px; }
         .grading-area { display: none; margin-top: 15px; background: #fafafa; padding: 10px; border-top: 2px solid #bdc3c7; }
+        .q-block { margin-bottom: 50px; padding-bottom: 30px; border-bottom: 2px solid #eee; }
+        .q-block:last-child { border-bottom: none; }
+        .sub-question-block { margin-top: 30px !important; padding-top: 20px; border-top: 1px dashed #ddd; }
         .grade-input { width: 60px; padding: 5px; text-align: center; border: 1px solid #ccc; border-radius: 4px; font-weight: bold; }
         .teacher-comment { background: #fff; }
         .model-answer-secret { margin-top: 10px; border: 1px dashed #f39c12; padding: 10px; background: #fffdf5; border-radius: 4px; font-size: 0.9em; color: #555; }
-        #startScreen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #2c3e50; color: white; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 9999; text-align: center; padding: 20px; box-sizing: border-box; }
+        #startScreen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #2c3e50; color: white; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 9999; text-align: center; padding: 20px; box-sizing: border-box; overflow-y: auto; }
         .sound-check-box { background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.3); padding: 15px; border-radius: 8px; margin-bottom: 30px; max-width: 600px; text-align: center; width: 100%; }
         .sound-check-text { font-size: 0.95em; margin-bottom: 15px; color: #ecf0f1; line-height: 1.5; }
         .sound-btn { background: #3498db; border: none; padding: 10px 25px; border-radius: 5px; color: white; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; margin: 0 auto; font-size: 1.1em; transition: background 0.2s, transform 0.1s; width: auto; }
@@ -173,6 +176,41 @@ window.HTMLBuilder = {
         .btn-submit-exam { background: #27ae60; color: white; }
         .btn-extend-time { background: #3498db; color: white; }
         .btn-cancel { background: #95a5a6; color: white; }
+
+        /* ========================================== */
+        /* === רספונסיבי למובייל                  === */
+        /* ========================================== */
+        @media (max-width: 768px) {
+            body { font-size: 16px; padding: 0; background: white; }
+            .container { max-width: 100%; margin: 0; padding: 16px; border-radius: 0; box-shadow: none; }
+            .container > div:first-child h1 { font-size: 1.4rem; line-height: 1.3; }
+            .school-logo { max-width: 120px; max-height: 80px; }
+            .tabs { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+            .tab-btn { padding: 8px 14px; font-size: 0.9rem; border-radius: 16px; flex: 1; min-width: 80px; text-align: center; }
+            .q-block { margin-bottom: 32px; padding-bottom: 24px; }
+            .q-header { font-size: 1rem; }
+            .q-content, .sub-q-text { font-size: 1rem; line-height: 1.6; }
+            .sub-question-block { padding-right: 10px !important; margin-top: 24px !important; }
+            textarea { height: 25vh; font-size: 1rem; padding: 12px; border-radius: 10px; }
+            .mic-btn { width: 40px; height: 40px; font-size: 1.3rem; }
+            .part-instructions { font-size: 0.95rem; padding: 12px; }
+            #btnCloudSave { width: 100%; padding: 14px; font-size: 1rem; }
+            .student-submit-area button { width: 100%; padding: 16px; font-size: 1.1rem; border-radius: 12px; }
+            .teacher-controls > div:nth-child(2) { flex-direction: column; }
+            .teacher-controls button { width: 100%; margin: 4px 0 !important; }
+            #timerBadge { top: 8px; left: 8px; font-size: 0.9rem; padding: 6px 12px; }
+            #startScreen h1 { font-size: 1.8rem; }
+            #startScreen > button { padding: 14px 30px !important; font-size: 1.2em !important; width: 90%; }
+            .modal-action-btn { display: block; width: 80%; margin: 8px auto !important; }
+            #highlighterTool { top: auto !important; bottom: 20px; right: 10px; flex-direction: row; width: auto; padding: 10px 12px; border-radius: 30px; gap: 10px; }
+            #hlDragHandle { display: none; }
+        }
+        @media (max-width: 400px) {
+            body { font-size: 15px; }
+            .tab-btn { font-size: 0.82rem; padding: 6px 10px; }
+            .q-block { margin-bottom: 24px; }
+            textarea { height: 22vh; }
+        }
         </style></head><body>
         ${embeddedProjectData}
         
@@ -202,7 +240,7 @@ window.HTMLBuilder = {
                 <button id="soundCheckBtn" class="sound-btn" onclick="toggleSoundCheck()"><span>▶️ נגן צליל בדיקה</span></button>
             </div>
             
-            <button onclick="startExamTimer()" style="padding:15px 40px; font-size:1.5em; background:#27ae60; color:white; border:none; border-radius:50px; font-weight:bold; box-shadow: 0 4px 15px rgba(0,0,0,0.3); cursor: pointer; transition: transform 0.2s;">התחל בחינה (מסך מלא)</button>
+            <button onclick="startExamTimer()" style="padding:15px 40px; font-size:1.5em; background:#27ae60; color:white; border:none; border-radius:50px; font-weight:bold; box-shadow: 0 4px 15px rgba(0,0,0,0.3); cursor: pointer; transition: transform 0.2s;">התחל בחינה</button>
         </div>
         
         <div id="timerBadge">זמן: <span id="timerText">--:--</span></div>
@@ -390,9 +428,10 @@ window.HTMLBuilder = {
             }
             isPlayingSound = !isPlayingSound;
         }
+        function isMobile(){ return /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent) || window.innerWidth <= 768; }
         function startExamTimer(){
             if(isPlayingSound) toggleSoundCheck(); 
-            document.documentElement.requestFullscreen().catch(e=>console.log(e));
+            if(!isMobile()) document.documentElement.requestFullscreen().catch(e=>console.log(e));
             document.getElementById('startScreen').style.display='none';
             document.getElementById('mainContainer').style.filter='none';
             document.getElementById('timerBadge').style.display='block';
@@ -583,8 +622,8 @@ window.HTMLBuilder = {
         function lockExam(){ clearInterval(timerInterval); stopVoiceTyping(); document.getElementById('securityModal').style.display='flex'; }
         function checkSec(){ if(!examStarted||document.body.dataset.status==='submitted'||document.body.dataset.status==='grading')return; if(document.hidden)lockExam(); }
         document.addEventListener('visibilitychange',checkSec);
-        document.addEventListener('fullscreenchange', () => { if(!document.fullscreenElement && examStarted && document.body.dataset.status!=='submitted' && document.body.dataset.status!=='grading') lockExam(); });
-        function unlockExam(){ if(simpleHash(document.getElementById('teacherCodeInput').value)==="${unlockCodeHash}"){ document.getElementById('securityModal').style.display='none'; document.documentElement.requestFullscreen().catch(e=>console.log(e)); runTimer(); } else { alert('קוד שגוי'); } }
+        document.addEventListener('fullscreenchange', () => { if(!isMobile() && !document.fullscreenElement && examStarted && document.body.dataset.status!=='submitted' && document.body.dataset.status!=='grading') lockExam(); });
+        function unlockExam(){ if(simpleHash(document.getElementById('teacherCodeInput').value)==="${unlockCodeHash}"){ document.getElementById('securityModal').style.display='none'; if(!isMobile()) document.documentElement.requestFullscreen().catch(e=>console.log(e)); runTimer(); } else { alert('קוד שגוי'); } }
         function showExtensionInput() { document.getElementById('timesUpActions').style.display = 'none'; document.getElementById('extensionPanel').style.display = 'block'; }
         function cancelExtension() { document.getElementById('timesUpActions').style.display = 'block'; document.getElementById('extensionPanel').style.display = 'none'; document.getElementById('extTeacherCode').value = ''; }
         function addTime() { if (simpleHash(document.getElementById('extTeacherCode').value) === "${unlockCodeHash}") { const m = parseInt(document.getElementById('extTimeAmount').value)||0; if (m > 0) { totalTime = m * 60; document.getElementById('timesUpModal').style.display = 'none'; document.getElementById('timesUpActions').style.display = 'block'; document.getElementById('extensionPanel').style.display = 'none'; document.getElementById('extTeacherCode').value = ''; runTimer(); } else alert('הזן דקות'); } else alert('קוד שגוי'); }
