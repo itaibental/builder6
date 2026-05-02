@@ -15,10 +15,17 @@ const db = getFirestore(app);
 
 export const CloudService = {
     async uploadExam(examData) {
-        return await addDoc(collection(db, "exams"), examData);
+        // מפריד בין מטא-דאטה קל לבין תוכן כבד (HTML + state)
+        const { htmlContent, state, ...lightData } = examData;
+        const examRef = await addDoc(collection(db, "exams"), lightData);
+        // שומר את התוכן הכבד ב-subcollection נפרד
+        await setDoc(doc(db, "exams", examRef.id, "content", "main"), { htmlContent, state });
+        return examRef;
     },
     async updateExam(examID, examData) {
-        return await setDoc(doc(db, "exams", examID), examData, { merge: true });
+        const { htmlContent, state, ...lightData } = examData;
+        await setDoc(doc(db, "exams", examID), lightData, { merge: true });
+        await setDoc(doc(db, "exams", examID, "content", "main"), { htmlContent, state });
     },
     async deleteExam(examID) {
         return await deleteDoc(doc(db, "exams", examID));
@@ -41,12 +48,31 @@ export const CloudService = {
     async getActiveExams() {
         const q = query(collection(db, "exams"), where("active", "==", true));
         const querySnapshot = await getDocs(q);
-        return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        // מחזיר רק שדות קלים לתצוגה - ללא htmlContent ו-state שהם כבדים
+        return querySnapshot.docs.map(d => {
+            const { htmlContent, state, ...light } = d.data();
+            return { id: d.id, ...light };
+        });
     },
     async getExam(examID) {
+        // שולף תוכן + state מה-subcollection (לצורך עריכה / הרצה)
+        const contentRef = doc(db, "exams", examID, "content", "main");
+        const contentSnap = await getDoc(contentRef);
+        if (contentSnap.exists()) return contentSnap.data();
+        // fallback למבחנים ישנים שנשמרו בפורמט הישן
         const docRef = doc(db, "exams", examID);
         const docSnap = await getDoc(docRef);
         return docSnap.exists() ? docSnap.data() : null;
+    },
+    async getExamHtml(examID) {
+        // שולף רק את ה-HTML (לצורך הרצת המבחן)
+        const contentRef = doc(db, "exams", examID, "content", "main");
+        const contentSnap = await getDoc(contentRef);
+        if (contentSnap.exists()) return contentSnap.data().htmlContent || null;
+        // fallback
+        const docRef = doc(db, "exams", examID);
+        const docSnap = await getDoc(docRef);
+        return docSnap.exists() ? (docSnap.data().htmlContent || null) : null;
     },
     async saveSubmission(submissionData) {
         const id = `${submissionData.studentID}_${submissionData.examID}`;
@@ -54,7 +80,11 @@ export const CloudService = {
     },
     async getSubmissions() {
         const querySnapshot = await getDocs(collection(db, "submissions"));
-        return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        // מחזיר רק שדות קלים - ללא תוכן התשובות שיכול להיות כבד מאוד
+        return querySnapshot.docs.map(d => {
+            const { answers, parts, questions, htmlContent, ...light } = d.data();
+            return { id: d.id, ...light };
+        });
     },
     async getSubmission(subID) {
         const docRef = doc(db, "submissions", subID);
