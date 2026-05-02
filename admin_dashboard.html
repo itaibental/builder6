@@ -27,6 +27,11 @@
         tr:hover td { background: #fdfdfd; }
         .status-badge { display: inline-block; padding: 4px 10px; border-radius: 20px; font-size: 0.8rem; font-weight: bold; }
         .status-active, .status-submitted { background: #e8f6f3; color: #16a085; }
+        .status-inactive { background: #fdecea; color: #c0392b; }
+        .btn-toggle-on  { background: #e8f6f3; color: #16a085; border: 1px solid #a9dfbf; padding: 5px 12px; border-radius: 20px; cursor: pointer; font-size: 0.82rem; font-weight: bold; transition: 0.2s; white-space: nowrap; }
+        .btn-toggle-on:hover  { background: #fdedec; color: #c0392b; border-color: #f5b7b1; }
+        .btn-toggle-off { background: #fdecea; color: #c0392b; border: 1px solid #f5b7b1; padding: 5px 12px; border-radius: 20px; cursor: pointer; font-size: 0.82rem; font-weight: bold; transition: 0.2s; white-space: nowrap; }
+        .btn-toggle-off:hover { background: #e8f6f3; color: #16a085; border-color: #a9dfbf; }
         .status-progress { background: #fef9e7; color: #f39c12; }
         .btn-check { background: var(--accent); color: white; border: none; padding: 6px 15px; border-radius: 4px; cursor: pointer; font-size: 0.85rem; transition: background 0.2s; }
         .btn-check:hover { background: var(--accent-hover); }
@@ -180,23 +185,39 @@
         window.fetchExamsList = async () => {
             const tbody = document.querySelector('#examsListTable tbody');
             try {
-                const exams = await CloudService.getActiveExams();
-                if (!exams || exams.length === 0) { tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:30px;">אין מבחנים מפורסמים במאגר.</td></tr>'; return; }
+                const exams = await CloudService.getAllExams();
+                if (!exams || exams.length === 0) { tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:30px;">אין מבחנים במאגר.</td></tr>'; return; }
                 exams.sort((a, b) => (Number(b.createdAt) || 0) - (Number(a.createdAt) || 0));
-                tbody.innerHTML = exams.map(e => `
-                    <tr>
+                tbody.innerHTML = exams.map(e => {
+                    const isActive = e.active !== false; // ברירת מחדל: פעיל
+                    const statusBadge = isActive
+                        ? `<span class="status-badge status-active">✅ פעיל לתלמידים</span>`
+                        : `<span class="status-badge status-inactive">🔴 מושהה</span>`;
+                    const toggleBtn = isActive
+                        ? `<button class="btn-toggle-on" onclick="toggleExamBtn('${e.id}', true)" title="לחץ להשהות">השהה גישה</button>`
+                        : `<button class="btn-toggle-off" onclick="toggleExamBtn('${e.id}', false)" title="לחץ להפעיל">הפעל גישה</button>`;
+                    return `
+                    <tr style="opacity: ${isActive ? '1' : '0.65'}">
                         <td><strong>${e.title || 'מבחן ללא שם'}</strong></td>
                         <td>${e.createdAt ? new Date(e.createdAt).toLocaleString('he-IL') : 'לא ידוע'}</td>
-                        <td><span class="status-badge status-active">פעיל לתלמידים</span></td>
+                        <td>${statusBadge}</td>
                         <td>
                             <div class="action-buttons">
+                                ${toggleBtn}
                                 <button class="btn-check" style="background:#27ae60;" onclick="editExamBtn('${e.id}')">✏️ ערוך</button>
-                                <button class="btn-delete-small" onclick="deleteExamBtn('${e.id}')">מחק מבחן</button>
+                                <button class="btn-delete-small" onclick="deleteExamBtn('${e.id}')">מחק</button>
                             </div>
                         </td>
-                    </tr>
-                `).join('');
+                    </tr>`;
+                }).join('');
             } catch (error) { tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; color:#c0392b;">שגיאה: ${error.message}</td></tr>`; }
+        };
+
+        window.toggleExamBtn = async (id, currentActive) => {
+            try {
+                await CloudService.toggleExamActive(id, currentActive);
+                fetchExamsList();
+            } catch (e) { alert('שגיאה בעדכון סטטוס המבחן: ' + e.message); }
         };
 
         window.deleteExamBtn = async (id) => {
