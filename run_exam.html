@@ -36,7 +36,7 @@
             }
 
             try {
-                const examDoc = await CloudService.getExam(examId);
+                const examDoc = await CloudService.getExamHtml(examId).then(html => html ? { htmlContent: html } : CloudService.getExam(examId));
                 
                 if (!examDoc) {
                     alert('קובץ המבחן לא נמצא במאגר המערכת.');
