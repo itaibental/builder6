@@ -48,11 +48,21 @@ export const CloudService = {
     async getActiveExams() {
         const q = query(collection(db, "exams"), where("active", "==", true));
         const querySnapshot = await getDocs(q);
-        // מחזיר רק שדות קלים לתצוגה - ללא htmlContent ו-state שהם כבדים
         return querySnapshot.docs.map(d => {
             const { htmlContent, state, ...light } = d.data();
             return { id: d.id, ...light };
         });
+    },
+    async getAllExams() {
+        // מחזיר את כל המבחנים (פעילים וכבויים) לפאנל הניהול
+        const querySnapshot = await getDocs(collection(db, "exams"));
+        return querySnapshot.docs.map(d => {
+            const { htmlContent, state, ...light } = d.data();
+            return { id: d.id, ...light };
+        });
+    },
+    async toggleExamActive(examID, currentActive) {
+        return await setDoc(doc(db, "exams", examID), { active: !currentActive }, { merge: true });
     },
     async getExam(examID) {
         // שולף תוכן + state מה-subcollection (לצורך עריכה / הרצה)
