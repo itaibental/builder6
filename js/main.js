@@ -1,7 +1,44 @@
 const App = {
     init: function() {
         UI.initElements();
-        
+
+        // --- טעינת מבחן לעריכה מהענן (דרך פאנל הניהול) ---
+        const editStateRaw = sessionStorage.getItem('editExamState');
+        const editExamId = sessionStorage.getItem('editExamId');
+        const editMetaRaw = sessionStorage.getItem('editExamMeta');
+        if (editStateRaw && editExamId) {
+            try {
+                const savedState = JSON.parse(editStateRaw);
+                const savedMeta = editMetaRaw ? JSON.parse(editMetaRaw) : {};
+                // Copy all properties from saved state into ExamState
+                Object.assign(ExamState, savedState);
+                ExamState._editExamId = editExamId; // remember cloud ID for update
+                sessionStorage.removeItem('editExamState');
+                sessionStorage.removeItem('editExamId');
+                sessionStorage.removeItem('editExamMeta');
+                // Restore meta fields
+                if (savedMeta.duration && UI.elements.examDurationInput)
+                    UI.elements.examDurationInput.value = savedMeta.duration;
+                if (savedMeta.teacherEmail) {
+                    const el = document.getElementById('teacherEmailInput');
+                    if (el) el.value = savedMeta.teacherEmail;
+                }
+                if (savedMeta.driveLink) {
+                    const el = document.getElementById('driveFolderInput');
+                    if (el) el.value = savedMeta.driveLink;
+                }
+                // Show update indicator and update button
+                const indicator = document.getElementById('editModeIndicator');
+                if (indicator) indicator.style.display = 'flex';
+                const updateBtn = document.getElementById('btnUpdateExam');
+                if (updateBtn) updateBtn.style.display = 'block';
+                console.log('עורך נטען ממבחן קיים:', editExamId);
+            } catch(e) {
+                console.error('שגיאה בטעינת מבחן לעריכה:', e);
+            }
+        }
+        // -------------------------------------------------
+
         // Initial setup
         if(ExamState.parts.length === 0) {
             this.addPart(); // Ensure at least one part exists
@@ -14,7 +51,7 @@ const App = {
         if(UI.elements.examTitleInput) UI.elements.examTitleInput.value = ExamState.examTitle;
         if(UI.elements.previewExamTitle) UI.elements.previewExamTitle.textContent = ExamState.examTitle;
         if(UI.elements.examInstructions) UI.elements.examInstructions.value = ExamState.instructions.general;
-        if(UI.elements.examDurationInput) UI.elements.examDurationInput.value = 90;
+        if(UI.elements.examDurationInput && !(ExamState._editExamId)) UI.elements.examDurationInput.value = 90;
         
         // Initialize Theme
         if (UI.elements.bgColorInput) UI.elements.bgColorInput.value = ExamState.theme.background;

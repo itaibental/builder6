@@ -17,6 +17,9 @@ export const CloudService = {
     async uploadExam(examData) {
         return await addDoc(collection(db, "exams"), examData);
     },
+    async updateExam(examID, examData) {
+        return await setDoc(doc(db, "exams", examID), examData, { merge: true });
+    },
     async deleteExam(examID) {
         return await deleteDoc(doc(db, "exams", examID));
     },
