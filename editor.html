@@ -147,8 +147,15 @@
             <div style="text-align: center;">
                 <h2>📤 סיום והפצה</h2>
                 
-             <button class="btn-download" style="background: #e67e22; border: 1px solid #d35400; margin-bottom: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.3);" onclick="uploadExamToCloud()">
-    <i class="fas fa-cloud-upload-alt"></i> העבר למאגר (Cloud)
+             <!-- אינדיקטור מצב עריכה -->
+             <div id="editModeIndicator" style="display:none; background:#fff3cd; border:1px solid #ffc107; border-radius:8px; padding:10px 14px; margin-bottom:12px; align-items:center; gap:10px; font-size:0.9rem; color:#856404;">
+                 <span>✏️ <strong>מצב עריכה:</strong> אתה עורך מבחן קיים מהענן</span>
+             </div>
+             <button class="btn-download" style="background: #e67e22; border: 1px solid #d35400; margin-bottom: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.3);" onclick="uploadExamToCloud()">
+    <i class="fas fa-cloud-upload-alt"></i> העלה כמבחן חדש
+</button>
+             <button id="btnUpdateExam" class="btn-download" style="display:none; background:#27ae60; border:1px solid #1e8449; margin-bottom:20px; box-shadow:0 4px 10px rgba(0,0,0,0.3);" onclick="updateExamInCloud()">
+    💾 עדכן מבחן קיים בענן
 </button>
                 <hr style="border: 0; border-top: 1px solid rgba(255,255,255,0.1); margin-bottom: 20px;">
                 
@@ -231,6 +238,65 @@
         } catch (error) {
             console.error("Firebase upload error:", error);
             UI.showToast('אירעה שגיאה בהעלאה לענן: ' + error.message, 'error');
+        }
+    };
+
+    // ---- עדכון מבחן קיים בענן ----
+    window.updateExamInCloud = async function() {
+        const examId = ExamState._editExamId;
+        if (!examId) {
+            UI.showToast('לא זוהה מזהה מבחן לעדכון.', 'error');
+            return;
+        }
+        if (!ExamState.examTitle || ExamState.questions.length === 0) {
+            UI.showToast('המבחן ריק או חסר כותרת.', 'error');
+            return;
+        }
+
+        UI.showToast('מעדכן מבחן בענן...', 'info');
+
+        const duration = document.getElementById('examDurationInput').value || 90;
+        const unlockCode = document.getElementById('unlockCodeInput').value || '1234';
+        const teacherEmail = document.getElementById('teacherEmailInput').value || '';
+        const driveLink = document.getElementById('driveFolderInput').value || '';
+        const hash = Utils.simpleHash(unlockCode);
+
+        const projectData = {
+            state: ExamState,
+            meta: { duration, unlockCode, teacherEmail, driveLink, examTitle: ExamState.examTitle, generalInstructions: ExamState.instructions.general }
+        };
+
+        const generatedHTML = HTMLBuilder.build(
+            "",
+            ExamState.questions,
+            ExamState.instructions,
+            ExamState.examTitle,
+            ExamState.logoData,
+            ExamState.solutionDataUrl,
+            duration,
+            hash,
+            ExamState.parts,
+            teacherEmail,
+            driveLink,
+            projectData,
+            ExamState.theme
+        );
+
+        const cloudPayload = {
+            title: ExamState.examTitle,
+            htmlContent: generatedHTML,
+            state: JSON.parse(JSON.stringify(ExamState)),
+            meta: { duration, unlockCodeHash: hash, teacherEmail, driveLink },
+            active: true,
+            updatedAt: Date.now()
+        };
+
+        try {
+            await CloudService.updateExam(examId, cloudPayload);
+            UI.showToast('המבחן עודכן בהצלחה בענן! ✅', 'success');
+        } catch (error) {
+            console.error("Firebase update error:", error);
+            UI.showToast('שגיאה בעדכון הענן: ' + error.message, 'error');
         }
     };
 </script>
