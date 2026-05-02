@@ -190,7 +190,7 @@
                         <td><span class="status-badge status-active">פעיל לתלמידים</span></td>
                         <td>
                             <div class="action-buttons">
-                                <button class="btn-check" onclick="alert('מזהה פנימי: ${e.id}')">פרטים</button>
+                                <button class="btn-check" style="background:#27ae60;" onclick="editExamBtn('${e.id}')">✏️ ערוך</button>
                                 <button class="btn-delete-small" onclick="deleteExamBtn('${e.id}')">מחק מבחן</button>
                             </div>
                         </td>
@@ -244,6 +244,23 @@
         window.downloadTemplate = () => {
             const ws = XLSX.utils.json_to_sheet([{ "שם": "ישראל ישראלי", "תעודת זהות": "123456789" }]);
             const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "תלמידים"); XLSX.writeFile(wb, "פורמט_תלמידים_לדוגמה.xlsx");
+        };
+
+        window.editExamBtn = async (examId) => {
+            try {
+                const exam = await CloudService.getExam(examId);
+                if (!exam || !exam.state) {
+                    alert('לא נמצאו נתוני עריכה עבור מבחן זה (ייתכן שהועלה בגרסה ישנה).');
+                    return;
+                }
+                // Store exam data + id in sessionStorage for editor to pick up
+                sessionStorage.setItem('editExamState', JSON.stringify(exam.state));
+                sessionStorage.setItem('editExamId', examId);
+                sessionStorage.setItem('editExamMeta', JSON.stringify(exam.meta || {}));
+                window.location.href = 'editor.html';
+            } catch (e) {
+                alert('שגיאה בטעינת המבחן לעריכה: ' + e.message);
+            }
         };
 
         window.onload = () => { fetchStudentsList(); fetchExamsList(); fetchSubmissions(); };
