@@ -84,6 +84,22 @@ export const CloudService = {
         const docSnap = await getDoc(docRef);
         return docSnap.exists() ? (docSnap.data().htmlContent || null) : null;
     },
+    async saveSubmissionSnapshot(submissionData) {
+        // שומר גרסה היסטורית כל 10 דקות (snapshot) תחת subcollection
+        const id = `${submissionData.studentID}_${submissionData.examID}`;
+        const snapshotId = `snap_${Date.now()}`;
+        return await setDoc(
+            doc(db, "submissions", id, "snapshots", snapshotId),
+            { ...submissionData, snapshotAt: Date.now() }
+        );
+    },
+    async getSubmissionSnapshots(subID) {
+        const snapshotsRef = collection(db, "submissions", subID, "snapshots");
+        const querySnapshot = await getDocs(snapshotsRef);
+        return querySnapshot.docs
+            .map(d => ({ id: d.id, ...d.data() }))
+            .sort((a, b) => (b.snapshotAt || 0) - (a.snapshotAt || 0));
+    },
     async saveSubmission(submissionData) {
         const id = `${submissionData.studentID}_${submissionData.examID}`;
         return await setDoc(doc(db, "submissions", id), submissionData, { merge: true });
