@@ -201,7 +201,8 @@
             const tbody = document.querySelector('#studentsListTable tbody');
             const totalBadge = document.getElementById('totalStudentsBadge');
             try {
-                const students = await CloudService.getStudents();
+                const timeout = new Promise((_, reject) => setTimeout(() => reject(new Error('Firebase לא הגיב – בדוק Security Rules ב-Firebase Console')), 8000));
+                const students = await Promise.race([CloudService.getStudents(), timeout]);
                 if (!students || students.length === 0) { tbody.innerHTML = '<tr><td colspan="3" style="text-align:center;">אין תלמידים במאגר</td></tr>'; totalBadge.innerText = ''; return; }
                 const validStudents = students.map(s => ({ id: s.id || '?', name: s.name || '?' }));
                 validStudents.sort((a, b) => String(a.name).localeCompare(String(b.name), 'he'));
@@ -216,7 +217,8 @@
         window.fetchExamsList = async () => {
             const tbody = document.querySelector('#examsListTable tbody');
             try {
-                const exams = await CloudService.getAllExams();
+                const timeout = new Promise((_, reject) => setTimeout(() => reject(new Error('Firebase לא הגיב – בדוק Security Rules ב-Firebase Console')), 8000));
+                const exams = await Promise.race([CloudService.getAllExams(), timeout]);
                 if (!exams || exams.length === 0) { tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:30px;">אין מבחנים במאגר.</td></tr>'; return; }
                 exams.sort((a, b) => (Number(b.createdAt) || 0) - (Number(a.createdAt) || 0));
                 tbody.innerHTML = exams.map(e => {
@@ -307,7 +309,15 @@
 
         // הפעלת ה-listener החי – מעדכן אוטומטית כל אימת שתלמיד שומר
         function startSubmissionsListener() {
-            CloudService.subscribeSubmissions(subs => renderSubmissionsTable(subs));
+            const tbody = document.querySelector('#submissionsTable tbody');
+            // timeout אם Firebase לא מגיב תוך 8 שניות
+            const timer = setTimeout(() => {
+                tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; color:#c0392b; padding:20px;">⚠️ Firebase לא הגיב – בדוק Security Rules ב-Firebase Console<br><small style="color:#95a5a6;">כנס ל-Firebase Console → Firestore Database → Rules והגדר read: true</small></td></tr>';
+            }, 8000);
+            CloudService.subscribeSubmissions(
+                subs => { clearTimeout(timer); renderSubmissionsTable(subs); },
+                err => { clearTimeout(timer); tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; color:#c0392b; padding:20px;">❌ שגיאת Firebase: ${err.message}</td></tr>`; }
+            );
         }
 
         window.deleteSubmissionBtn = async (subID) => {
