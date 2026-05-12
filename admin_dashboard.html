@@ -339,7 +339,8 @@
             }
         };
 
-        window.onload = () => { fetchStudentsList(); fetchExamsList(); startSubmissionsListener(); };
+        // במודול ES, DOMContentLoaded עובד נכון (window.onload מאוחר מדי)
+        document.addEventListener('DOMContentLoaded', () => { fetchStudentsList(); fetchExamsList(); startSubmissionsListener(); });
 
         // ===== בחירה מרובה =====
         window.onRowCheckboxChange = () => updateBulkBar();
@@ -523,7 +524,7 @@
                 iframe.contentDocument.close();
             });
         }
-    </script>
+
     <!-- Progress overlay for PDF download -->
     <div id="pdfProgressOverlay">
         <div id="pdfProgressBox">
@@ -563,8 +564,7 @@
         </div>
     </div>
 
-    <script type="module">
-        import { CloudService } from './js/firebase-service.js';
+        // ===== גרסאות היסטוריות (snapshots) =====
         let _currentSubId = null;
 
         window.showSnapshotsModal = async (subId, studentName) => {
