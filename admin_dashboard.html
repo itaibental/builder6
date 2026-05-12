@@ -257,45 +257,63 @@
             }
         };
 
-        // --- 3. מחיקת הגשות תלמידים ---
-        window.fetchSubmissions = async () => {
+        // --- 3. הגשות תלמידים – האזנה חיה בזמן אמת (onSnapshot) ---
+        function renderSubmissionsTable(subs) {
             const tbody = document.querySelector('#submissionsTable tbody');
+            if (!subs || subs.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:30px;">אין הגשות כרגע במערכת.</td></tr>';
+                return;
+            }
+            subs.sort((a, b) => (Number(b.lastUpdate) || 0) - (Number(a.lastUpdate) || 0));
+            // שמירת מצב צ'קבוקסים פעילים לפני רינדור מחדש
+            const checkedIds = new Set([...document.querySelectorAll('.sub-row-chk:checked')].map(el => el.dataset.subId));
+            tbody.innerHTML = subs.map(sub => {
+                let statusLabel = 'במהלך פתרון', statusClass = 'status-progress';
+                if (sub.status === 'submitted') { statusLabel = 'הוגש סופית'; statusClass = 'status-submitted'; }
+                else if (sub.status === 'graded') { statusLabel = 'נבדק ע"י מורה'; statusClass = 'status-submitted'; }
+                const dateStr = sub.lastUpdate ? new Date(sub.lastUpdate).toLocaleString('he-IL') : 'לא ידוע';
+                const subId = `${sub.studentID}_${sub.examID}`;
+                const safeStudentName = (sub.studentName || sub.studentID || '').replace(/'/g, "\'");
+                const wasChecked = checkedIds.has(subId) ? 'checked' : '';
+                return `<tr data-sub-id="${subId}" data-student-name="${sub.studentName || ''}" data-exam-title="${sub.examTitle || sub.examID || ''}" data-exam-id="${sub.examID || ''}">
+                    <td style="text-align:center;"><input type="checkbox" class="sub-checkbox sub-row-chk" data-sub-id="${subId}" ${wasChecked} onchange="onRowCheckboxChange()"></td>
+                    <td><strong>${sub.studentName || '---'}</strong></td>
+                    <td>${sub.studentID || '---'}</td>
+                    <td>${sub.examTitle || sub.examID || 'מבחן'}</td>
+                    <td><span style="font-size:0.85rem; color:#95a5a6;">${dateStr}</span></td>
+                    <td><span class="status-badge ${statusClass}">${statusLabel}</span></td>
+                    <td>
+                        <div class="action-buttons">
+                            <button class="btn-check" style="background:#8e44ad;" onclick="window.open('grade_exam.html?subId=${subId}', '_blank')">פתח לבדיקה</button>
+                            <button class="btn-check" style="background:#e67e22;" onclick="showSnapshotsModal('${subId}', '${safeStudentName}')">🕐 גרסאות</button>
+                            <button class="btn-delete-small" onclick="deleteSubmissionBtn('${subId}')">מחק הגשה</button>
+                        </div>
+                    </td>
+                </tr>`;
+            }).join('');
+            updateBulkBar();
+        }
+
+        // fetchSubmissions נשאר זמין לכפתור הרענן הידני
+        window.fetchSubmissions = async () => {
             try {
                 const subs = await CloudService.getSubmissions();
-                if (!subs || subs.length === 0) return tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:30px;">אין הגשות כרגע במערכת.</td></tr>';
-                subs.sort((a, b) => (Number(b.lastUpdate) || 0) - (Number(a.lastUpdate) || 0));
-                tbody.innerHTML = subs.map(sub => {
-                    let statusLabel = 'במהלך פתרון', statusClass = 'status-progress';
-                    if (sub.status === 'submitted') { statusLabel = 'הוגש סופית'; statusClass = 'status-submitted'; } 
-                    else if (sub.status === 'graded') { statusLabel = 'נבדק ע"י מורה'; statusClass = 'status-submitted'; }
-                    const dateStr = sub.lastUpdate ? new Date(sub.lastUpdate).toLocaleString('he-IL') : 'לא ידוע';
-                    const subId = `${sub.studentID}_${sub.examID}`;
-                    const safeStudentName = (sub.studentName || sub.studentID || '').replace(/'/g, "\'");
-                    const safeExamTitle = (sub.examTitle || sub.examID || 'מבחן').replace(/'/g, "\'");
-                    return `<tr data-sub-id="${subId}" data-student-name="${sub.studentName || ''}" data-exam-title="${sub.examTitle || sub.examID || ''}" data-exam-id="${sub.examID || ''}">
-                        <td style="text-align:center;"><input type="checkbox" class="sub-checkbox sub-row-chk" data-sub-id="${subId}" onchange="onRowCheckboxChange()"></td>
-                        <td><strong>${sub.studentName || '---'}</strong></td>
-                        <td>${sub.studentID || '---'}</td>
-                        <td>${sub.examTitle || sub.examID || 'מבחן'}</td>
-                        <td><span style="font-size:0.85rem; color:#95a5a6;">${dateStr}</span></td>
-                        <td><span class="status-badge ${statusClass}">${statusLabel}</span></td>
-                        <td>
-                            <div class="action-buttons">
-                                <button class="btn-check" style="background:#8e44ad;" onclick="window.open('grade_exam.html?subId=${subId}', '_blank')">פתח לבדיקה</button>
-                                <button class="btn-check" style="background:#e67e22;" onclick="showSnapshotsModal('${subId}', '${safeStudentName}')">🕐 גרסאות</button>
-                                <button class="btn-delete-small" onclick="deleteSubmissionBtn('${subId}')">מחק הגשה</button>
-                            </div>
-                        </td>
-                    </tr>`;
-                }).join('');
-                document.getElementById('selectAllChk').checked = false;
-                updateBulkBar();
-            } catch (error) { tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; color:#c0392b;">שגיאה: ${error.message}</td></tr>`; }
+                renderSubmissionsTable(subs);
+            } catch (error) {
+                document.querySelector('#submissionsTable tbody').innerHTML =
+                    `<tr><td colspan="7" style="text-align:center; color:#c0392b;">שגיאה: ${error.message}</td></tr>`;
+            }
         };
 
+        // הפעלת ה-listener החי – מעדכן אוטומטית כל אימת שתלמיד שומר
+        function startSubmissionsListener() {
+            CloudService.subscribeSubmissions(subs => renderSubmissionsTable(subs));
+        }
+
         window.deleteSubmissionBtn = async (subID) => {
-            if (confirm('אזהרה: האם אתה בטוח שברצונך למחוק את נתוני ההגשה של תלמיד זה?\nהפעולה תמחק את כל התשובות שלו ללא אפשרות שחזור!')) {
-                try { await CloudService.deleteSubmission(subID); fetchSubmissions(); } catch (e) { alert('שגיאה במחיקת ההגשה: ' + e.message); }
+            if (confirm('אזהרה: האם אתה בטוח שברצונך למחוק את נתוני ההגשה של תלמיד זה?
+הפעולה תמחק את כל התשובות שלו ללא אפשרות שחזור!')) {
+                try { await CloudService.deleteSubmission(subID); } catch (e) { alert('שגיאה במחיקת ההגשה: ' + e.message); }
             }
         };
 
@@ -321,7 +339,7 @@
             }
         };
 
-        window.onload = () => { fetchStudentsList(); fetchExamsList(); fetchSubmissions(); };
+        window.onload = () => { fetchStudentsList(); fetchExamsList(); startSubmissionsListener(); };
 
         // ===== בחירה מרובה =====
         window.onRowCheckboxChange = () => updateBulkBar();

@@ -496,12 +496,12 @@ window.HTMLBuilder = {
             // שחזור תשובות קיימות מהענן
             restoreAnswersFromCloud();
             
-            // שמירה אוטומטית רגילה כל 40 שניות
+            // שמירה אוטומטית רגילה כל 90 שניות
             setInterval(() => {
                 if(examStarted && document.body.dataset.status !== 'submitted' && document.body.dataset.status !== 'grading') {
                     saveProgressToCloud(false, true);
                 }
-            }, 40000);
+            }, 90000);
             // שמירת snapshot היסטורי כל 10 דקות
             setInterval(() => {
                 if(examStarted && document.body.dataset.status !== 'submitted' && document.body.dataset.status !== 'grading') {
@@ -617,6 +617,8 @@ window.HTMLBuilder = {
             } catch(e) { console.log('שמירת snapshot נכשלה:', e); }
         }
 
+        let _lastSavedAnswers = null;
+
         async function saveProgressToCloud(isSubmit = false, isAutoSave = false) {
             const btn = document.getElementById('btnCloudSave');
             if(btn && !isSubmit) { 
@@ -626,6 +628,12 @@ window.HTMLBuilder = {
 
             const answers = {};
             document.querySelectorAll('.student-ans').forEach(el => answers[el.id] = el.value);
+
+            // דילוג אם לא השתנה כלום מאז השמירה האחרונה
+            if (isAutoSave && _lastSavedAnswers !== null && JSON.stringify(answers) === _lastSavedAnswers) {
+                if(btn && !isSubmit) { btn.innerText = "💾 שמירה יזומה לענן"; btn.disabled = false; }
+                return;
+            }
 
             const studentID = localStorage.getItem('studentID') || document.getElementById('studentNameField').value || 'unknown_student';
             const examID = localStorage.getItem('activeExamID') || 'unknown_exam';
@@ -644,6 +652,7 @@ window.HTMLBuilder = {
             try {
                 const module = await import('./js/firebase-service.js');
                 await module.CloudService.saveSubmission(payload);
+                _lastSavedAnswers = JSON.stringify(answers); // עדכון קאש מקומי לאחר שמירה מוצלחת
                 if(btn && !isSubmit) {
                     btn.innerText = "✅ נשמר בהצלחה";
                     btn.style.background = "#27ae60";

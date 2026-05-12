@@ -1,5 +1,5 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-import { getFirestore, collection, addDoc, getDocs, doc, setDoc, deleteDoc, query, where, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+import { getFirestore, enableIndexedDbPersistence, collection, addDoc, getDocs, onSnapshot, doc, setDoc, deleteDoc, query, where, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyALZyRVu3NaH4HaH8DbthySORQYLMdbTng",
@@ -12,6 +12,12 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
+
+// Offline persistence – טעינה מיידית מהקאש המקומי בכל ביקור חוזר
+enableIndexedDbPersistence(db).catch(err => {
+    if (err.code === 'failed-precondition') console.warn('Firebase persistence: multiple tabs open');
+    else if (err.code === 'unimplemented') console.warn('Firebase persistence: browser not supported');
+});
 
 export const CloudService = {
     async uploadExam(examData) {
@@ -101,8 +107,10 @@ export const CloudService = {
             .sort((a, b) => (b.snapshotAt || 0) - (a.snapshotAt || 0));
     },
     async saveSubmission(submissionData) {
-        const id = `${submissionData.studentID}_${submissionData.examID}`;
-        return await setDoc(doc(db, "submissions", id), submissionData, { merge: true });
+        // מסנן htmlContent – לא שייך להגשה, מכביד מאוד על המסמך
+        const { htmlContent, ...cleanData } = submissionData;
+        const id = `${cleanData.studentID}_${cleanData.examID}`;
+        return await setDoc(doc(db, "submissions", id), cleanData, { merge: true });
     },
     async getSubmissions() {
         const querySnapshot = await getDocs(collection(db, "submissions"));
@@ -111,6 +119,16 @@ export const CloudService = {
             const { answers, parts, questions, htmlContent, ...light } = d.data();
             return { id: d.id, ...light };
         });
+    },
+    // האזנה חיה להגשות – מעדכן את הדשבורד בזמן אמת ללא polling
+    subscribeSubmissions(callback) {
+        return onSnapshot(collection(db, "submissions"), snapshot => {
+            const subs = snapshot.docs.map(d => {
+                const { answers, parts, questions, htmlContent, ...light } = d.data();
+                return { id: d.id, ...light };
+            });
+            callback(subs);
+        }, err => console.error('subscribeSubmissions error:', err));
     },
     async getSubmission(subID) {
         const docRef = doc(db, "submissions", subID);
