@@ -321,8 +321,7 @@
         }
 
         window.deleteSubmissionBtn = async (subID) => {
-            if (confirm('אזהרה: האם אתה בטוח שברצונך למחוק את נתוני ההגשה של תלמיד זה?
-הפעולה תמחק את כל התשובות שלו ללא אפשרות שחזור!')) {
+            if (confirm('אזהרה: האם אתה בטוח שברצונך למחוק את נתוני ההגשה של תלמיד זה?\nהפעולה תמחק את כל התשובות שלו ללא אפשרות שחזור!')) {
                 try { await CloudService.deleteSubmission(subID); } catch (e) { alert('שגיאה במחיקת ההגשה: ' + e.message); }
             }
         };
