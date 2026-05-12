@@ -1,5 +1,5 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-import { getFirestore, enableIndexedDbPersistence, collection, addDoc, getDocs, onSnapshot, doc, setDoc, deleteDoc, query, where, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+import { initializeFirestore, getFirestore, persistentLocalCache, persistentMultipleTabManager, collection, addDoc, getDocs, onSnapshot, doc, setDoc, deleteDoc, query, where, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyALZyRVu3NaH4HaH8DbthySORQYLMdbTng",
@@ -11,13 +11,18 @@ const firebaseConfig = {
 };
 
 const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
 
-// Offline persistence – טעינה מיידית מהקאש המקומי בכל ביקור חוזר
-enableIndexedDbPersistence(db).catch(err => {
-    if (err.code === 'failed-precondition') console.warn('Firebase persistence: multiple tabs open');
-    else if (err.code === 'unimplemented') console.warn('Firebase persistence: browser not supported');
-});
+// Firebase v10: persistent cache – טעינה מיידית מהקאש בכל ביקור חוזר
+// fallback אוטומטי אם הדפדפן לא תומך (Safari ישן, מצב פרטי)
+let db;
+try {
+    db = initializeFirestore(app, {
+        localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() })
+    });
+} catch(e) {
+    db = getFirestore(app);
+    console.warn('Firebase persistence not available, using default:', e.message);
+}
 
 export const CloudService = {
     async uploadExam(examData) {
