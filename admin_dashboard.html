@@ -339,8 +339,10 @@
             }
         };
 
-        // במודול ES, DOMContentLoaded עובד נכון (window.onload מאוחר מדי)
-        document.addEventListener('DOMContentLoaded', () => { fetchStudentsList(); fetchExamsList(); startSubmissionsListener(); });
+        // מודול ES רץ deferred – הDOM מוכן, קוראים ישירות
+        fetchStudentsList();
+        fetchExamsList();
+        startSubmissionsListener();
 
         // ===== בחירה מרובה =====
         window.onRowCheckboxChange = () => updateBulkBar();
