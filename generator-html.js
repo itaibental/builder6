@@ -117,14 +117,8 @@ window.HTMLBuilder = {
         const hdrColor = safeTheme.header;
 
         const cloudSaveArea = `
-            <div style="text-align:center; margin: 30px 0; background: var(--cloud-bg,#ebf5fb); padding: 20px; border-radius: 12px; border: 1px dashed #3498db;">
-                <div style="display:flex; align-items:center; justify-content:center; gap:12px; flex-wrap:wrap; margin-bottom:12px;">
-                    <span id="cloudStatusDot" title="סטטוס שמירה בענן" style="display:inline-flex;align-items:center;gap:6px;font-size:0.9rem;font-weight:bold;color:#7f8c8d;background:var(--cloud-dot-bg,#f0f0f0);padding:5px 14px;border-radius:20px;border:1px solid #ddd;transition:all 0.4s;">
-                        <span id="cloudDot" style="width:10px;height:10px;border-radius:50%;background:#bdc3c7;display:inline-block;transition:background 0.4s;"></span>
-                        <span id="cloudDotText">ממתין לשמירה...</span>
-                    </span>
-                    <button type="button" id="darkModeBtn" onclick="toggleDarkMode()" style="background:var(--dm-btn-bg,#2c3e50);color:white;padding:7px 16px;border:none;border-radius:20px;font-size:0.9rem;cursor:pointer;transition:0.2s;" title="מצב יום/לילה">🌙 לילה</button>
-                </div>
+            <div style="text-align:center; margin: 30px 0; background: #ebf5fb; padding: 20px; border-radius: 12px; border: 1px dashed #3498db;">
+                <p style="margin: 0 0 10px 0; font-size: 0.95rem; color: #2980b9; font-weight: bold;">☁️ המערכת מגבה את תשובותיך אוטומטית בכל 40 שניות.</p>
                 <button type="button" onclick="saveProgressToCloud(false)" id="btnCloudSave" style="background: #3498db; color: white; padding: 12px 25px; border: none; border-radius: 30px; font-size: 1.1rem; cursor: pointer; transition: 0.2s;">
                     💾 שמירה יזומה לענן
                 </button>
@@ -133,19 +127,6 @@ window.HTMLBuilder = {
 
         return `<!DOCTYPE html><html lang="he" dir="rtl"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>מבחן - ${studentName}</title><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;700&display=swap"><style>
         :root{--primary:#2c3e50;--accent:#3498db;--success:#27ae60;--danger:#e74c3c;}
-        body.dark-mode{--primary:#ecf0f1;--accent:#5dade2;--success:#58d68d;--danger:#ec7063;background:#1a1a2e!important;color:#ecf0f1;}
-        body.dark-mode .container{background:#16213e;box-shadow:0 1vh 3vh rgba(0,0,0,0.5);}
-        body.dark-mode textarea{background:#0f3460;color:#ecf0f1;border-color:#5dade2;}
-        body.dark-mode .tab-btn{background:#0f3460;color:#bdc3c7;}
-        body.dark-mode .tab-btn.active{background:#5dade2;color:#fff;}
-        body.dark-mode .q-block{border-color:#2c3e50;}
-        body.dark-mode .part-instructions{background:#0d2137;color:#76d7c4;border-color:#1abc9c;}
-        body.dark-mode .instructions-box{background:#0d2137;color:#ecf0f1;}
-        body.dark-mode input[type=text]{background:#0f3460;color:#ecf0f1;border-color:#5dade2;}
-        body.dark-mode .grading-area{background:#0d2137;}
-        body.dark-mode .teacher-controls{background:#1a1a2e;border-color:#e67e22;}
-        body.dark-mode #timerBadge{background:#1a1a2e;color:#ecf0f1;border-color:#5dade2;}
-        body.dark-mode{--cloud-bg:#0d2137;--cloud-dot-bg:#0f3460;--dm-btn-bg:#f39c12;}
         body{font-family:'Rubik',sans-serif;background:${bgColor};margin:0;padding:2%;color:#2c3e50;font-size:18px;line-height:1.5; user-select: text;} 
         .container{max-width:800px;margin:0 auto;background:white;padding:5%;border-radius:1em;box-shadow:0 1vh 3vh rgba(0,0,0,0.05);}
         textarea{width:100%;height:20vh;padding:2vh;border:1px solid #ccc;border-radius:0.8em;font-family:inherit;font-size:1rem; user-select: text;}
@@ -178,7 +159,7 @@ window.HTMLBuilder = {
         .grade-input { width: 60px; padding: 5px; text-align: center; border: 1px solid #ccc; border-radius: 4px; font-weight: bold; }
         .teacher-comment { background: #fff; }
         .model-answer-secret { margin-top: 10px; border: 1px dashed #f39c12; padding: 10px; background: #fffdf5; border-radius: 4px; font-size: 0.9em; color: #555; }
-        #startScreen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #2c3e50; color: white; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 9999; text-align: center; padding: 20px; box-sizing: border-box; overflow-y: auto; }
+        #startScreen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #2c3e50; color: white; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 9999; text-align: center; padding: 20px; box-sizing: border-box; }
         .sound-check-box { background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.3); padding: 15px; border-radius: 8px; margin-bottom: 30px; max-width: 600px; text-align: center; width: 100%; }
         .sound-check-text { font-size: 0.95em; margin-bottom: 15px; color: #ecf0f1; line-height: 1.5; }
         .sound-btn { background: #3498db; border: none; padding: 10px 25px; border-radius: 5px; color: white; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; margin: 0 auto; font-size: 1.1em; transition: background 0.2s, transform 0.1s; width: auto; }
@@ -259,7 +240,7 @@ window.HTMLBuilder = {
                 <button id="soundCheckBtn" class="sound-btn" onclick="toggleSoundCheck()"><span>▶️ נגן צליל בדיקה</span></button>
             </div>
             
-            <button onclick="startExamTimer()" style="padding:15px 40px; font-size:1.5em; background:#27ae60; color:white; border:none; border-radius:50px; font-weight:bold; box-shadow: 0 4px 15px rgba(0,0,0,0.3); cursor: pointer; transition: transform 0.2s;">התחל בחינה</button>
+            <button onclick="startExamTimer()" style="padding:15px 40px; font-size:1.5em; background:#27ae60; color:white; border:none; border-radius:50px; font-weight:bold; box-shadow: 0 4px 15px rgba(0,0,0,0.3); cursor: pointer; transition: transform 0.2s;">התחל בחינה (מסך מלא)</button>
         </div>
         
         <div id="timerBadge">זמן: <span id="timerText">--:--</span></div>
@@ -447,77 +428,36 @@ window.HTMLBuilder = {
             }
             isPlayingSound = !isPlayingSound;
         }
-        function isMobile(){ return /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent) || window.innerWidth <= 768; }
         function startExamTimer(){
             if(isPlayingSound) toggleSoundCheck(); 
-            if(!isMobile()) document.documentElement.requestFullscreen().catch(e=>console.log(e));
+            document.documentElement.requestFullscreen().catch(e=>console.log(e));
             document.getElementById('startScreen').style.display='none';
             document.getElementById('mainContainer').style.filter='none';
             document.getElementById('timerBadge').style.display='block';
             document.getElementById('highlighterTool').style.display='flex';
             examStarted=true; runTimer(); updateTimer();
-            loadSavedAnswers();
             
-            // שמירה רגילה כל 2 דקות
             setInterval(() => {
                 if(examStarted && document.body.dataset.status !== 'submitted' && document.body.dataset.status !== 'grading') {
                     saveProgressToCloud(false, true);
                 }
-            }, 120000);
-            // שמירת snapshot כל 10 דקות
-            setInterval(() => {
-                if(examStarted && document.body.dataset.status !== 'submitted' && document.body.dataset.status !== 'grading') {
-                    saveSnapshot10min();
-                }
-            }, 600000);
+            }, 40000);
         }
         function runTimer(){clearInterval(timerInterval);timerInterval=setInterval(()=>{totalTime--;updateTimer();if(totalTime<=0){clearInterval(timerInterval);document.getElementById('timesUpModal').style.display='flex';}},1000);}
         function updateTimer(){let m=Math.floor(totalTime/60),s=totalTime%60;document.getElementById('timerText').innerText=(m<10?'0'+m:m)+':'+(s<10?'0'+s:s);}
         function showPart(id){document.querySelectorAll('.exam-section').forEach(e=>e.classList.remove('active'));document.getElementById('part-'+id).classList.add('active');document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));event.target.classList.add('active');}
         function calcTotal(){ let t=0; document.querySelectorAll('.grade-input').forEach(i=>{ if(i.value) t += parseFloat(i.value); }); const display = document.getElementById('teacherCalculatedScore'); if(display) display.innerText = t; }
         
-        function setCloudDot(state) {
-            // state: 'saving' | 'ok' | 'error' | 'idle'
-            const dot = document.getElementById('cloudDot');
-            const txt = document.getElementById('cloudDotText');
-            if(!dot||!txt) return;
-            const map = {
-                saving: { bg:'#f39c12', text:'שומר בענן...' },
-                ok:     { bg:'#27ae60', text:'גובה בענן ✓' },
-                error:  { bg:'#e74c3c', text:'שגיאה בשמירה' },
-                idle:   { bg:'#bdc3c7', text:'ממתין לשמירה...' }
-            };
-            dot.style.background = map[state].bg;
-            txt.innerText = map[state].text;
-            if(state === 'ok') setTimeout(() => setCloudDot('idle'), 5000);
-        }
-
-        function collectAnswers() {
-            const answers = {};
-            document.querySelectorAll('.student-ans').forEach(el => answers[el.id] = el.value);
-            return answers;
-        }
-
-        async function saveSnapshot10min() {
-            try {
-                const studentID = localStorage.getItem('studentID') || 'unknown';
-                const examID = localStorage.getItem('activeExamID') || 'unknown';
-                const answers = collectAnswers();
-                const module = await import('./js/firebase-service.js?v=1527');
-                await module.CloudService.saveSnapshot(studentID, examID, answers);
-                console.log('Snapshot saved');
-            } catch(e) { console.error('Snapshot error', e); }
-        }
-
         async function saveProgressToCloud(isSubmit = false, isAutoSave = false) {
             const btn = document.getElementById('btnCloudSave');
             if(btn && !isSubmit) { 
                 btn.innerText = isAutoSave ? "☁️ גיבוי אוטומטי..." : "⏳ שומר נתונים לענן..."; 
                 btn.disabled = true; 
             }
-            setCloudDot('saving');
 
-            const answers = collectAnswers();
+            const answers = {};
+            document.querySelectorAll('.student-ans').forEach(el => answers[el.id] = el.value);
+
             const studentID = localStorage.getItem('studentID') || document.getElementById('studentNameField').value || 'unknown_student';
             const examID = localStorage.getItem('activeExamID') || 'unknown_exam';
             const studentName = localStorage.getItem('studentName') || document.getElementById('studentNameField').value || 'תלמיד';
@@ -533,9 +473,8 @@ window.HTMLBuilder = {
             };
 
             try {
-                const module = await import('./js/firebase-service.js?v=1527');
+                const module = await import('./js/firebase-service.js');
                 await module.CloudService.saveSubmission(payload);
-                setCloudDot('ok');
                 if(btn && !isSubmit) {
                     btn.innerText = "✅ נשמר בהצלחה";
                     btn.style.background = "#27ae60";
@@ -543,7 +482,6 @@ window.HTMLBuilder = {
                 }
             } catch (err) {
                 console.error(err);
-                setCloudDot('error');
                 if(btn && !isSubmit) { btn.innerText = "❌ שגיאה בשמירה"; btn.disabled = false; }
             }
         }
@@ -559,7 +497,7 @@ window.HTMLBuilder = {
             document.querySelectorAll('.teacher-comment').forEach(el => teacherComments[el.id] = el.value);
 
             try {
-                const module = await import('./js/firebase-service.js?v=1527');
+                const module = await import('./js/firebase-service.js');
                 const subId = studentID + '_' + examID;
                 const existing = await module.CloudService.getSubmission(subId) || {};
                 await module.CloudService.saveSubmission({
@@ -680,47 +618,11 @@ window.HTMLBuilder = {
         const tool = document.getElementById('highlighterTool'), handle = document.getElementById('hlDragHandle');
         let isDragging = false, startX, startY, initialLeft, initialTop;
         handle.onmousedown = function(e) { e.preventDefault(); isDragging=true; startX=e.clientX; startY=e.clientY; initialLeft=tool.offsetLeft; initialTop=tool.offsetTop; document.onmouseup = function(){isDragging=false; document.onmouseup=null; document.onmousemove=null;}; document.onmousemove = function(e){if(!isDragging)return; tool.style.top=(initialTop+e.clientY-startY)+"px"; tool.style.left=(initialLeft+e.clientX-startX)+"px"; tool.style.right='auto';}; };
-        // ---- מצב יום/לילה ----
-        function toggleDarkMode() {
-            const isDark = document.body.classList.toggle('dark-mode');
-            const btn = document.getElementById('darkModeBtn');
-            if(btn) btn.innerText = isDark ? '☀️ יום' : '🌙 לילה';
-            try { localStorage.setItem('examDarkMode', isDark ? '1' : '0'); } catch(e){}
-        }
-        // שחזור העדפת מצב תצוגה
-        (function(){
-            try { if(localStorage.getItem('examDarkMode')==='1'){ document.body.classList.add('dark-mode'); const b=document.getElementById('darkModeBtn'); if(b) b.innerText='☀️ יום'; } } catch(e){}
-        })();
-
-        // ---- טעינת תשובות שמורות בעת חזרת הנבחן ----
-        async function loadSavedAnswers() {
-            try {
-                const studentID = localStorage.getItem('studentID');
-                const examID = localStorage.getItem('activeExamID');
-                if(!studentID || !examID) return;
-                const module = await import('./js/firebase-service.js?v=1527');
-                const sub = await module.CloudService.getSubmission(studentID + '_' + examID);
-                if(!sub || !sub.answers || sub.status === 'submitted') return;
-                let count = 0;
-                for(const [id, val] of Object.entries(sub.answers)) {
-                    const el = document.getElementById(id);
-                    if(el && val) { el.value = val; count++; }
-                }
-                if(count > 0) {
-                    const dot = document.getElementById('cloudDotText');
-                    if(dot) dot.innerText = '✅ תשובות שוחזרו (' + count + ')';
-                    const d = document.getElementById('cloudDot');
-                    if(d) d.style.background = '#27ae60';
-                    setTimeout(() => setCloudDot('idle'), 4000);
-                }
-            } catch(e) { console.warn('loadSavedAnswers error', e); }
-        }
-
         function lockExam(){ clearInterval(timerInterval); stopVoiceTyping(); document.getElementById('securityModal').style.display='flex'; }
         function checkSec(){ if(!examStarted||document.body.dataset.status==='submitted'||document.body.dataset.status==='grading')return; if(document.hidden)lockExam(); }
         document.addEventListener('visibilitychange',checkSec);
-        document.addEventListener('fullscreenchange', () => { if(!isMobile() && !document.fullscreenElement && examStarted && document.body.dataset.status!=='submitted' && document.body.dataset.status!=='grading') lockExam(); });
-        function unlockExam(){ if(simpleHash(document.getElementById('teacherCodeInput').value)==="${unlockCodeHash}"){ document.getElementById('securityModal').style.display='none'; if(!isMobile()) document.documentElement.requestFullscreen().catch(e=>console.log(e)); runTimer(); } else { alert('קוד שגוי'); } }
+        document.addEventListener('fullscreenchange', () => { if(!document.fullscreenElement && examStarted && document.body.dataset.status!=='submitted' && document.body.dataset.status!=='grading') lockExam(); });
+        function unlockExam(){ if(simpleHash(document.getElementById('teacherCodeInput').value)==="${unlockCodeHash}"){ document.getElementById('securityModal').style.display='none'; document.documentElement.requestFullscreen().catch(e=>console.log(e)); runTimer(); } else { alert('קוד שגוי'); } }
         function showExtensionInput() { document.getElementById('timesUpActions').style.display = 'none'; document.getElementById('extensionPanel').style.display = 'block'; }
         function cancelExtension() { document.getElementById('timesUpActions').style.display = 'block'; document.getElementById('extensionPanel').style.display = 'none'; document.getElementById('extTeacherCode').value = ''; }
         function addTime() { if (simpleHash(document.getElementById('extTeacherCode').value) === "${unlockCodeHash}") { const m = parseInt(document.getElementById('extTimeAmount').value)||0; if (m > 0) { totalTime = m * 60; document.getElementById('timesUpModal').style.display = 'none'; document.getElementById('timesUpActions').style.display = 'block'; document.getElementById('extensionPanel').style.display = 'none'; document.getElementById('extTeacherCode').value = ''; runTimer(); } else alert('הזן דקות'); } else alert('קוד שגוי'); }

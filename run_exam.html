@@ -22,7 +22,7 @@
     </div>
 
     <script type="module">
-        import { CloudService } from './js/firebase-service.js';
+        import { CloudService } from './js/firebase-service.js?v=1527';
 
         async function initExam() {
             const examId = localStorage.getItem('activeExamID');
@@ -36,12 +36,39 @@
             }
 
             try {
-                const examDoc = await CloudService.getExam(examId);
+                const examDoc = await CloudService.getExamHtml(examId).then(html => html ? { htmlContent: html } : CloudService.getExam(examId));
                 
                 if (!examDoc) {
                     alert('קובץ המבחן לא נמצא במאגר המערכת.');
                     window.location.href = 'student_login.html';
                     return;
+                }
+
+                // פונקציה משותפת: שחזור תשובות שמורות לאחר טעינת ה-HTML
+                // עובדת גם עבור מבחנים ישנים שנוצרו לפני העדכון
+                async function restoreAnswersInExam() {
+                    try {
+                        const subId = studentID + '_' + examId;
+                        const sub = await CloudService.getSubmission(subId);
+                        if (!sub || !sub.answers || sub.status === 'submitted') return;
+                        let count = 0;
+                        for (const [id, val] of Object.entries(sub.answers)) {
+                            const el = document.getElementById(id);
+                            if (el && val) { el.value = val; count++; }
+                        }
+                        if (count > 0) {
+                            // עדכון נורית החיווי אם קיימת (מבחן חדש)
+                            const dot = document.getElementById('cloudDot');
+                            const dotTxt = document.getElementById('cloudDotText');
+                            if (dot) dot.style.background = '#27ae60';
+                            if (dotTxt) dotTxt.innerText = `✅ תשובות שוחזרו (${count})`;
+                            setTimeout(() => {
+                                if (dot) dot.style.background = '#bdc3c7';
+                                if (dotTxt) dotTxt.innerText = 'ממתין לשמירה...';
+                            }, 5000);
+                            console.log(`✅ שוחזרו ${count} תשובות שמורות`);
+                        }
+                    } catch(e) { console.warn('restoreAnswers error:', e); }
                 }
 
                 // בדיקה: האם זה מבחן חדש שיש לו HTML מוכן?
@@ -50,11 +77,13 @@
                     document.write(examDoc.htmlContent);
                     document.close();
 
-                    setTimeout(() => {
+                    setTimeout(async () => {
                         const nameField = document.getElementById('studentNameField');
                         if(nameField) nameField.value = studentName;
                         document.title = `מבחן - ${studentName}`;
-                    }, 300);
+                        // שחזור תשובות — גם למבחן עם HTML מוכן
+                        await restoreAnswersInExam();
+                    }, 500);
                 } 
                 // גיבוי: האם זה מבחן ישן שצריך לבנות את ה-HTML שלו עכשיו?
                 else if (examDoc.state) {
@@ -81,6 +110,11 @@
                     document.open();
                     document.write(htmlString);
                     document.close();
+
+                    // שחזור תשובות — גם למבחן ישן שנבנה דינמית
+                    setTimeout(async () => {
+                        await restoreAnswersInExam();
+                    }, 500);
                 } else {
                     throw new Error("קובץ המבחן ריק או פגום.");
                 }
