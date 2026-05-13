@@ -42,6 +42,14 @@
         @keyframes shimmer { 0%{background-position:-400px 0} 100%{background-position:400px 0} }
         .skel { display:inline-block; width:80%; height:14px; border-radius:4px; background: linear-gradient(90deg,#eee 25%,#f5f5f5 50%,#eee 75%); background-size:800px 100%; animation:shimmer 1.4s infinite; }
         .skeleton-row td { padding:14px 12px; }
+        /* --- Modal snapshots --- */
+        .modal-overlay { position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:9999;display:flex;align-items:center;justify-content:center; }
+        .modal-box { background:white;border-radius:12px;padding:30px;max-width:600px;width:90%;max-height:80vh;overflow-y:auto;box-shadow:0 8px 30px rgba(0,0,0,0.3); }
+        .modal-box h3 { margin-top:0;color:var(--primary); }
+        .snapshot-row { display:flex;justify-content:space-between;align-items:center;padding:12px;border:1px solid #eee;border-radius:8px;margin-bottom:8px;background:#fafafa; }
+        .snapshot-row:hover { background:#f0f8ff; }
+        .btn-restore { background:#8e44ad;color:white;border:none;padding:6px 14px;border-radius:4px;cursor:pointer;font-size:0.85rem;font-weight:bold; }
+        .btn-clone { background:#e67e22;color:white;border:none;padding:5px 12px;border-radius:4px;cursor:pointer;font-size:0.8rem;font-weight:bold; }
     </style>
 </head>
 <body>
@@ -99,12 +107,15 @@
             <div class="panel panel-flex-1">
                 <div class="panel-header">
                     <span>📚 מבחנים פעילים במאגר</span>
-                    <button onclick="fetchExamsList()" style="background:white; border:1px solid #ddd; padding:5px 10px; border-radius:4px; font-size:0.8rem; cursor:pointer;">🔄 רענן נתונים</button>
+                    <div style="display:flex;gap:8px;align-items:center;">
+                        <button onclick="bulkDownloadDocs()" id="btnBulkDownload" style="background:#2980b9;color:white;border:none;padding:5px 12px;border-radius:4px;font-size:0.8rem;cursor:pointer;display:none;">📥 הורד נבחרים DOCX</button>
+                        <button onclick="fetchExamsList()" style="background:white; border:1px solid #ddd; padding:5px 10px; border-radius:4px; font-size:0.8rem; cursor:pointer;">🔄 רענן נתונים</button>
+                    </div>
                 </div>
                 <div class="panel-body" style="padding: 0;">
                     <table id="examsListTable">
-                        <thead><tr><th>כותרת המבחן</th><th>תאריך העלאה</th><th>סטטוס במערכת</th><th>פעולות</th></tr></thead>
-                        <tbody><tr><td colspan="4" style="text-align:center; padding:30px; color:#7f8c8d;">טוען מבחנים...</td></tr></tbody>
+                        <thead><tr><th style="width:30px;"><input type="checkbox" id="selectAllExams" onchange="toggleSelectAll(this)"></th><th>כותרת המבחן</th><th>תאריך העלאה</th><th>סטטוס במערכת</th><th>פעולות</th></tr></thead>
+                        <tbody><tr><td colspan="5" style="text-align:center; padding:30px; color:#7f8c8d;">טוען מבחנים...</td></tr></tbody>
                     </table>
                 </div>
             </div>
@@ -121,6 +132,17 @@
                     </table>
                 </div>
             </div>
+        </div>
+    </div>
+
+    <!-- Modal: Snapshots -->
+    <div id="snapshotsModal" class="modal-overlay" style="display:none;">
+        <div class="modal-box">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+                <h3 id="snapshotModalTitle">📸 גרסאות שמורות</h3>
+                <button onclick="closeSnapshotsModal()" style="background:#e74c3c;color:white;border:none;padding:6px 14px;border-radius:6px;cursor:pointer;">✖ סגור</button>
+            </div>
+            <div id="snapshotsList"></div>
         </div>
     </div>
 
@@ -198,7 +220,7 @@
         // --- 2. מבחנים ---
         function renderExams(exams) {
             const tbody = document.querySelector('#examsListTable tbody');
-            if (!exams || exams.length === 0) { tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:30px;">אין מבחנים במאגר.</td></tr>'; return; }
+            if (!exams || exams.length === 0) { tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:30px;">אין מבחנים במאגר.</td></tr>'; return; }
             exams.sort((a, b) => (Number(b.createdAt) || 0) - (Number(a.createdAt) || 0));
             tbody.innerHTML = exams.map(e => {
                 const isActive = e.active !== false;
@@ -209,7 +231,8 @@
                     ? `<button class="btn-toggle-on" onclick="toggleExamBtn('${e.id}', true)" title="לחץ להשהות">השהה גישה</button>`
                     : `<button class="btn-toggle-off" onclick="toggleExamBtn('${e.id}', false)" title="לחץ להפעיל">הפעל גישה</button>`;
                 return `
-                <tr style="opacity: ${isActive ? '1' : '0.65'}">
+                <tr style="opacity: ${isActive ? '1' : '0.65'}" data-exam-id="${e.id}" data-exam-title="${(e.title||'').replace(/"/g,'&quot;')}">
+                    <td style="text-align:center;"><input type="checkbox" class="exam-checkbox" onchange="onExamCheckChange()" value="${e.id}"></td>
                     <td><strong>${e.title || 'מבחן ללא שם'}</strong></td>
                     <td>${e.createdAt ? new Date(e.createdAt).toLocaleString('he-IL') : 'לא ידוע'}</td>
                     <td>${statusBadge}</td>
@@ -217,6 +240,7 @@
                         <div class="action-buttons">
                             ${toggleBtn}
                             <button class="btn-check" style="background:#27ae60;" onclick="editExamBtn('${e.id}')">✏️ ערוך</button>
+                            <button class="btn-clone" onclick="duplicateExamBtn('${e.id}')">📋 שכפל</button>
                             <button class="btn-delete-small" onclick="deleteExamBtn('${e.id}')">מחק</button>
                         </div>
                     </td>
@@ -225,9 +249,9 @@
         }
         window.fetchExamsList = async () => {
             const tbody = document.querySelector('#examsListTable tbody');
-            tbody.innerHTML = skeletonRows(4);
+            tbody.innerHTML = skeletonRows(5);
             try { renderExams(await CloudService.getAllExams()); }
-            catch (error) { tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; color:#c0392b;">שגיאה: ${error.message}</td></tr>`; }
+            catch (error) { tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:#c0392b;">שגיאה: ${error.message}</td></tr>`; }
         };
 
         window.toggleExamBtn = async (id, currentActive) => {
@@ -263,6 +287,7 @@
                     <td>
                         <div class="action-buttons">
                             <button class="btn-check" style="background:#8e44ad;" onclick="window.open('grade_exam.html?subId=${subId}', '_blank')">פתח לבדיקה</button>
+                            <button class="btn-check" style="background:#16a085;" onclick="openSnapshotsModal('${sub.studentID}','${sub.examID}','${sub.studentName||sub.studentID}')">📸 גרסאות</button>
                             <button class="btn-delete-small" onclick="deleteSubmissionBtn('${subId}')">מחק הגשה</button>
                         </div>
                     </td>
@@ -302,6 +327,119 @@
             } catch (e) {
                 alert('שגיאה בטעינת המבחן לעריכה: ' + e.message);
             }
+        };
+
+        // ---- שכפול מבחן ----
+        window.duplicateExamBtn = async (id) => {
+            try {
+                const newId = await CloudService.duplicateExam(id);
+                alert('✅ המבחן שוכפל בהצלחה! עותק חדש נוסף למאגר.');
+                fetchExamsList();
+            } catch(e) { alert('שגיאה בשכפול: ' + e.message); }
+        };
+
+        // ---- בחירה מרובה + הורדת DOCX ----
+        window.toggleSelectAll = (cb) => {
+            document.querySelectorAll('.exam-checkbox').forEach(c => c.checked = cb.checked);
+            onExamCheckChange();
+        };
+        window.onExamCheckChange = () => {
+            const any = [...document.querySelectorAll('.exam-checkbox')].some(c => c.checked);
+            document.getElementById('btnBulkDownload').style.display = any ? 'inline-block' : 'none';
+        };
+        window.bulkDownloadDocs = async () => {
+            const checked = [...document.querySelectorAll('.exam-checkbox:checked')];
+            if(!checked.length) return;
+            const btn = document.getElementById('btnBulkDownload');
+            btn.innerText = '⏳ מוריד...'; btn.disabled = true;
+            let downloaded = 0;
+            for(const cb of checked) {
+                const examId = cb.value;
+                const row = cb.closest('tr');
+                const title = row ? (row.dataset.examTitle || examId) : examId;
+                try {
+                    const exam = await CloudService.getExam(examId);
+                    if(!exam || !exam.state) { console.warn('No state for', examId); continue; }
+                    const s = exam.state;
+                    const meta = s.meta || {};
+                    // Build simple DOCX-compatible HTML
+                    let docHtml = `<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word'><head><meta charset='utf-8'><style>body{font-family:Arial;direction:rtl;} h1,h2{text-align:center;} .q{border:1px solid #ccc;padding:10px;margin:10px 0;}</style></head><body>`;
+                    docHtml += `<h1>${s.examTitle || title}</h1>`;
+                    if(s.instructions && s.instructions.general) docHtml += `<p><strong>הנחיות:</strong> ${s.instructions.general}</p>`;
+                    (s.parts || [{id:'A',name:'חלק א'}]).forEach(part => {
+                        docHtml += `<h2>${part.name}</h2>`;
+                        const qs = (s.questions || []).filter(q => q.part === part.id || (!q.part));
+                        qs.forEach((q, qi) => {
+                            docHtml += `<div class='q'><p><strong>שאלה ${qi+1}</strong> (${q.points||0} נק'): ${q.text||''}</p>`;
+                            if(q.subQuestions && q.subQuestions.length) {
+                                q.subQuestions.forEach((sq, si) => {
+                                    docHtml += `<p style='margin-right:20px;'><strong>סעיף ${String.fromCharCode(97+si)}'</strong> (${sq.points||0} נק'): ${sq.text||''}</p>`;
+                                });
+                            }
+                            docHtml += `</div>`;
+                        });
+                    });
+                    docHtml += `</body></html>`;
+                    const blob = new Blob(['﻿', docHtml], {type:'application/msword'});
+                    const a = document.createElement('a');
+                    a.href = URL.createObjectURL(blob);
+                    a.download = (s.examTitle || title).replace(/[/\\:*?"<>|]/g,'_') + '.doc';
+                    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+                    downloaded++;
+                    await new Promise(r => setTimeout(r, 400)); // pause between downloads
+                } catch(e) { console.error('Download error for', examId, e); }
+            }
+            btn.innerText = `📥 הורד נבחרים DOCX`; btn.disabled = false;
+            if(downloaded) alert(`✅ הורדו ${downloaded} קבצים בהצלחה.`);
+        };
+
+        // ---- Snapshots (גרסאות שמורות) ----
+        window.openSnapshotsModal = async (studentID, examID, studentName) => {
+            const modal = document.getElementById('snapshotsModal');
+            const list = document.getElementById('snapshotsList');
+            const title = document.getElementById('snapshotModalTitle');
+            title.innerText = `📸 גרסאות שמורות — ${studentName}`;
+            list.innerHTML = '<p style="text-align:center;">טוען גרסאות...</p>';
+            modal.style.display = 'flex';
+            try {
+                const snaps = await CloudService.getSnapshots(studentID, examID);
+                if(!snaps || !snaps.length) { list.innerHTML = '<p style="text-align:center;color:#95a5a6;">אין גרסאות שמורות עדיין.</p>'; return; }
+                list.innerHTML = snaps.map((s, idx) => {
+                    const date = new Date(s.savedAt).toLocaleString('he-IL');
+                    const ansCount = s.answers ? Object.values(s.answers).filter(v=>v&&v.trim()).length : 0;
+                    return `<div class="snapshot-row">
+                        <div>
+                            <strong>גרסה ${snaps.length - idx}</strong> &nbsp;
+                            <span style="color:#7f8c8d;font-size:0.85rem;">${date}</span><br>
+                            <small style="color:#95a5a6;">${ansCount} שדות מולאו</small>
+                        </div>
+                        <button class="btn-restore" onclick="restoreSnapshot('${studentID}','${examID}','${s.id}')">♻️ שחזר גרסה זו</button>
+                    </div>`;
+                }).join('');
+                // store for restore
+                window._currentSnapshots = { studentID, examID, snaps };
+            } catch(e) { list.innerHTML = `<p style="color:#c0392b;">שגיאה: ${e.message}</p>`; }
+        };
+        window.closeSnapshotsModal = () => {
+            document.getElementById('snapshotsModal').style.display = 'none';
+        };
+        window.restoreSnapshot = async (studentID, examID, snapId) => {
+            if(!confirm('האם לשחזר גרסה זו? הנתונים הנוכחיים של ההגשה יוחלפו.')) return;
+            try {
+                const { snaps } = window._currentSnapshots;
+                const snap = snaps.find(s => s.id === snapId);
+                if(!snap) return alert('גרסה לא נמצאה.');
+                const existing = await CloudService.getSubmission(`${studentID}_${examID}`) || {};
+                await CloudService.saveSubmission({
+                    ...existing,
+                    studentID, examID,
+                    answers: snap.answers,
+                    lastUpdate: Date.now(),
+                    restoredFrom: snap.savedAt
+                });
+                alert('✅ הגרסה שוחזרה בהצלחה! הבדיקה הבאה תציג את הנתונים המשוחזרים.');
+                closeSnapshotsModal();
+            } catch(e) { alert('שגיאה בשחזור: ' + e.message); }
         };
 
         // --- טעינה מקבילית של כל הנתונים בבת אחת ---
