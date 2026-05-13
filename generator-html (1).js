@@ -1,3 +1,4 @@
+// firebase-service.js v1.5.27 — cache-bust
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
 import { getFirestore, collection, addDoc, getDocs, doc, setDoc, deleteDoc, query, where, getDoc, orderBy, limit } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 

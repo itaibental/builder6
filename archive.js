@@ -503,7 +503,7 @@ window.HTMLBuilder = {
                 const studentID = localStorage.getItem('studentID') || 'unknown';
                 const examID = localStorage.getItem('activeExamID') || 'unknown';
                 const answers = collectAnswers();
-                const module = await import('./js/firebase-service.js');
+                const module = await import('./js/firebase-service.js?v=1527');
                 await module.CloudService.saveSnapshot(studentID, examID, answers);
                 console.log('Snapshot saved');
             } catch(e) { console.error('Snapshot error', e); }
@@ -533,7 +533,7 @@ window.HTMLBuilder = {
             };
 
             try {
-                const module = await import('./js/firebase-service.js');
+                const module = await import('./js/firebase-service.js?v=1527');
                 await module.CloudService.saveSubmission(payload);
                 setCloudDot('ok');
                 if(btn && !isSubmit) {
@@ -559,7 +559,7 @@ window.HTMLBuilder = {
             document.querySelectorAll('.teacher-comment').forEach(el => teacherComments[el.id] = el.value);
 
             try {
-                const module = await import('./js/firebase-service.js');
+                const module = await import('./js/firebase-service.js?v=1527');
                 const subId = studentID + '_' + examID;
                 const existing = await module.CloudService.getSubmission(subId) || {};
                 await module.CloudService.saveSubmission({
@@ -698,7 +698,7 @@ window.HTMLBuilder = {
                 const studentID = localStorage.getItem('studentID');
                 const examID = localStorage.getItem('activeExamID');
                 if(!studentID || !examID) return;
-                const module = await import('./js/firebase-service.js');
+                const module = await import('./js/firebase-service.js?v=1527');
                 const sub = await module.CloudService.getSubmission(studentID + '_' + examID);
                 if(!sub || !sub.answers || sub.status === 'submitted') return;
                 let count = 0;
