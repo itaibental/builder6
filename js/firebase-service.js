@@ -1,5 +1,16 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-import { getFirestore, collection, addDoc, getDocs, onSnapshot, doc, setDoc, deleteDoc, query, where, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+import { getFirestore, collection, addDoc, getDocs, doc, setDoc, deleteDoc, query, where, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+// ---- Cache פנימי (30 שניות TTL) ----
+const CACHE_TTL = 30_000;
+const _cache = {};
+function cacheGet(key) {
+    const entry = _cache[key];
+    if (entry && Date.now() - entry.ts < CACHE_TTL) return entry.data;
+    return null;
+}
+function cacheSet(key, data) { _cache[key] = { data, ts: Date.now() }; }
+function cacheInvalidate(...keys) { keys.forEach(k => delete _cache[k]); }
 
 const firebaseConfig = {
   apiKey: "AIzaSyALZyRVu3NaH4HaH8DbthySORQYLMdbTng",
@@ -15,30 +26,37 @@ const db = getFirestore(app);
 
 export const CloudService = {
     async uploadExam(examData) {
-        // מפריד בין מטא-דאטה קל לבין תוכן כבד (HTML + state)
         const { htmlContent, state, ...lightData } = examData;
         const examRef = await addDoc(collection(db, "exams"), lightData);
-        // שומר את התוכן הכבד ב-subcollection נפרד
         await setDoc(doc(db, "exams", examRef.id, "content", "main"), { htmlContent, state });
+        cacheInvalidate('allExams', 'activeExams');
         return examRef;
     },
     async updateExam(examID, examData) {
         const { htmlContent, state, ...lightData } = examData;
         await setDoc(doc(db, "exams", examID), lightData, { merge: true });
         await setDoc(doc(db, "exams", examID, "content", "main"), { htmlContent, state });
+        cacheInvalidate('allExams', 'activeExams');
     },
     async deleteExam(examID) {
+        cacheInvalidate('allExams', 'activeExams');
         return await deleteDoc(doc(db, "exams", examID));
     },
     async saveStudents(studentList) {
         const promises = studentList.map(student => setDoc(doc(db, "students", student.id), student));
+        cacheInvalidate('students');
         return Promise.all(promises);
     },
     async getStudents() {
+        const cached = cacheGet('students');
+        if (cached) return cached;
         const querySnapshot = await getDocs(collection(db, "students"));
-        return querySnapshot.docs.map(doc => doc.data());
+        const result = querySnapshot.docs.map(d => d.data());
+        cacheSet('students', result);
+        return result;
     },
     async deleteStudent(studentID) {
+        cacheInvalidate('students');
         return await deleteDoc(doc(db, "students", studentID));
     },
     async verifyStudent(studentID) {
@@ -46,26 +64,33 @@ export const CloudService = {
         return studentDoc.exists() ? studentDoc.data() : null;
     },
     async getActiveExams() {
+        const cached = cacheGet('activeExams');
+        if (cached) return cached;
         const q = query(collection(db, "exams"), where("active", "==", true));
         const querySnapshot = await getDocs(q);
-        return querySnapshot.docs.map(d => {
+        const result = querySnapshot.docs.map(d => {
             const { htmlContent, state, ...light } = d.data();
             return { id: d.id, ...light };
         });
+        cacheSet('activeExams', result);
+        return result;
     },
     async getAllExams() {
-        // מחזיר את כל המבחנים (פעילים וכבויים) לפאנל הניהול
+        const cached = cacheGet('allExams');
+        if (cached) return cached;
         const querySnapshot = await getDocs(collection(db, "exams"));
-        return querySnapshot.docs.map(d => {
+        const result = querySnapshot.docs.map(d => {
             const { htmlContent, state, ...light } = d.data();
             return { id: d.id, ...light };
         });
+        cacheSet('allExams', result);
+        return result;
     },
     async toggleExamActive(examID, currentActive) {
+        cacheInvalidate('allExams', 'activeExams');
         return await setDoc(doc(db, "exams", examID), { active: !currentActive }, { merge: true });
     },
     async getExam(examID) {
-        // שולף תוכן + state מה-subcollection (לצורך עריכה / הרצה)
         const contentRef = doc(db, "exams", examID, "content", "main");
         const contentSnap = await getDoc(contentRef);
         if (contentSnap.exists()) return contentSnap.data();
@@ -75,7 +100,6 @@ export const CloudService = {
         return docSnap.exists() ? docSnap.data() : null;
     },
     async getExamHtml(examID) {
-        // שולף רק את ה-HTML (לצורך הרצת המבחן)
         const contentRef = doc(db, "exams", examID, "content", "main");
         const contentSnap = await getDoc(contentRef);
         if (contentSnap.exists()) return contentSnap.data().htmlContent || null;
@@ -84,53 +108,39 @@ export const CloudService = {
         const docSnap = await getDoc(docRef);
         return docSnap.exists() ? (docSnap.data().htmlContent || null) : null;
     },
-    async saveSubmissionSnapshot(submissionData) {
-        // שומר גרסה היסטורית כל 10 דקות (snapshot) תחת subcollection
-        const id = `${submissionData.studentID}_${submissionData.examID}`;
-        const snapshotId = `snap_${Date.now()}`;
-        return await setDoc(
-            doc(db, "submissions", id, "snapshots", snapshotId),
-            { ...submissionData, snapshotAt: Date.now() }
-        );
-    },
-    async getSubmissionSnapshots(subID) {
-        const snapshotsRef = collection(db, "submissions", subID, "snapshots");
-        const querySnapshot = await getDocs(snapshotsRef);
-        return querySnapshot.docs
-            .map(d => ({ id: d.id, ...d.data() }))
-            .sort((a, b) => (b.snapshotAt || 0) - (a.snapshotAt || 0));
-    },
     async saveSubmission(submissionData) {
-        // מסנן htmlContent – לא שייך להגשה, מכביד מאוד על המסמך
-        const { htmlContent, ...cleanData } = submissionData;
-        const id = `${cleanData.studentID}_${cleanData.examID}`;
-        return await setDoc(doc(db, "submissions", id), cleanData, { merge: true });
+        const id = `${submissionData.studentID}_${submissionData.examID}`;
+        cacheInvalidate('submissions');
+        return await setDoc(doc(db, "submissions", id), submissionData, { merge: true });
     },
     async getSubmissions() {
+        const cached = cacheGet('submissions');
+        if (cached) return cached;
         const querySnapshot = await getDocs(collection(db, "submissions"));
-        // מחזיר רק שדות קלים - ללא תוכן התשובות שיכול להיות כבד מאוד
-        return querySnapshot.docs.map(d => {
+        const result = querySnapshot.docs.map(d => {
             const { answers, parts, questions, htmlContent, ...light } = d.data();
             return { id: d.id, ...light };
         });
-    },
-    // האזנה חיה להגשות – מעדכן את הדשבורד בזמן אמת ללא polling
-    subscribeSubmissions(callback) {
-        return onSnapshot(collection(db, "submissions"), snapshot => {
-            const subs = snapshot.docs.map(d => {
-                const { answers, parts, questions, htmlContent, ...light } = d.data();
-                return { id: d.id, ...light };
-            });
-            callback(subs);
-        }, err => console.error('subscribeSubmissions error:', err));
+        cacheSet('submissions', result);
+        return result;
     },
     async getSubmission(subID) {
         const docRef = doc(db, "submissions", subID);
         const docSnap = await getDoc(docRef);
         return docSnap.exists() ? docSnap.data() : null;
     },
-    // הפונקציה החדשה: מחיקת הגשה של תלמיד מהמאגר
     async deleteSubmission(subID) {
+        cacheInvalidate('submissions');
         return await deleteDoc(doc(db, "submissions", subID));
+    },
+
+    // ---- טעינה מקבילית של כל נתוני הדשבורד בקריאה אחת ----
+    async getDashboardData() {
+        const [students, exams, submissions] = await Promise.all([
+            this.getStudents(),
+            this.getAllExams(),
+            this.getSubmissions()
+        ]);
+        return { students, exams, submissions };
     }
 };

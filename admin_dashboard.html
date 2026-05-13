@@ -7,9 +7,6 @@
     <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;700;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <style>
         body { background: #f4f6f8; overflow: hidden; display: flex; flex-direction: column; height: 100vh; margin: 0; }
         .admin-layout { display: flex; gap: 20px; padding: 20px; flex: 1; overflow: hidden; height: calc(100vh - 60px); }
@@ -41,25 +38,10 @@
         .btn-delete-small { background: #ffebee; color: #c0392b; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 0.8rem; font-weight: bold; transition: 0.2s; }
         .btn-delete-small:hover { background: #ffcdd2; }
         .action-buttons { display: flex; gap: 5px; align-items: center; }
-        /* ===== בחירה מרובה והורדת ZIP ===== */
-        .sub-checkbox { width: 18px; height: 18px; cursor: pointer; accent-color: var(--accent); }
-        #bulkActionsBar { display: none; align-items: center; gap: 12px; padding: 10px 16px; background: #eaf4fd; border-bottom: 2px solid #3498db; font-size: 0.9rem; direction: rtl; }
-        #bulkActionsBar.visible { display: flex; }
-        #selectedCount { font-weight: bold; color: #2c3e50; }
-        .btn-bulk { padding: 7px 16px; border: none; border-radius: 6px; cursor: pointer; font-size: 0.88rem; font-weight: bold; transition: 0.2s; display: flex; align-items: center; gap: 6px; }
-        .btn-bulk-pdf { background: #e74c3c; color: white; }
-        .btn-bulk-pdf:hover { background: #c0392b; }
-        .btn-bulk-clear { background: #95a5a6; color: white; }
-        .btn-bulk-clear:hover { background: #7f8c8d; }
-        .btn-select-all { background: white; border: 1px solid #3498db; color: #3498db; padding: 5px 12px; border-radius: 6px; cursor: pointer; font-size: 0.82rem; font-weight: bold; }
-        .btn-select-all:hover { background: #eaf4fd; }
-        /* Progress overlay */
-        #pdfProgressOverlay { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:199999; align-items:center; justify-content:center; }
-        #pdfProgressOverlay.visible { display:flex; }
-        #pdfProgressBox { background:white; border-radius:14px; padding:35px 45px; text-align:center; min-width:320px; box-shadow:0 10px 40px rgba(0,0,0,0.3); direction:rtl; }
-        #pdfProgressBar { width:100%; height:12px; background:#eee; border-radius:10px; margin:16px 0 8px; overflow:hidden; }
-        #pdfProgressFill { height:100%; background:linear-gradient(90deg,#3498db,#2ecc71); border-radius:10px; width:0%; transition:width 0.4s ease; }
-        #pdfProgressText { color:#7f8c8d; font-size:0.9rem; }
+        /* --- Skeleton loading --- */
+        @keyframes shimmer { 0%{background-position:-400px 0} 100%{background-position:400px 0} }
+        .skel { display:inline-block; width:80%; height:14px; border-radius:4px; background: linear-gradient(90deg,#eee 25%,#f5f5f5 50%,#eee 75%); background-size:800px 100%; animation:shimmer 1.4s infinite; }
+        .skeleton-row td { padding:14px 12px; }
     </style>
 </head>
 <body>
@@ -130,21 +112,12 @@
             <div class="panel panel-flex-1">
                 <div class="panel-header">
                     <span>📝 סטטוס נבחנים והגשות בזמן אמת</span>
-                    <div style="display:flex; gap:8px; align-items:center;">
-                        <button onclick="fetchSubmissions()" style="background:white; border:1px solid #ddd; padding:5px 10px; border-radius:4px; font-size:0.8rem; cursor:pointer;">🔄 רענן נתונים</button>
-                    </div>
-                </div>
-                <!-- סרגל פעולות מרובות -->
-                <div id="bulkActionsBar">
-                    <span id="selectedCount">0 נבחרו</span>
-                    <button class="btn-bulk btn-bulk-pdf" onclick="downloadSelectedAsPDFZip()">📥 הורד PDF+ZIP</button>
-                    <button class="btn-bulk btn-bulk-clear" onclick="clearSelection()">✕ בטל בחירה</button>
-                    <button class="btn-select-all" onclick="selectAllSubmissions()">☑ בחר הכל</button>
+                    <button onclick="fetchSubmissions()" style="background:white; border:1px solid #ddd; padding:5px 10px; border-radius:4px; font-size:0.8rem; cursor:pointer;">🔄 רענן נתונים</button>
                 </div>
                 <div class="panel-body" style="padding: 0;">
                     <table id="submissionsTable">
-                        <thead><tr><th style="width:36px; text-align:center;"><input type="checkbox" id="selectAllChk" class="sub-checkbox" title="בחר הכל" onchange="toggleSelectAll(this.checked)"></th><th>שם תלמיד</th><th>ת.ז.</th><th>שם המבחן</th><th>זמן עדכון אחרון</th><th>סטטוס</th><th>פעולות מורה</th></tr></thead>
-                        <tbody><tr><td colspan="7" style="text-align:center; padding:30px; color:#7f8c8d;">טוען הגשות...</td></tr></tbody>
+                        <thead><tr><th>שם תלמיד</th><th>ת.ז.</th><th>שם המבחן</th><th>זמן עדכון אחרון</th><th>סטטוס</th><th>פעולות מורה</th></tr></thead>
+                        <tbody><tr><td colspan="6" style="text-align:center; padding:30px; color:#7f8c8d;">טוען הגשות...</td></tr></tbody>
                     </table>
                 </div>
             </div>
@@ -153,6 +126,13 @@
 
     <script type="module">
         import { CloudService } from './js/firebase-service.js';
+
+        // --- skeleton rows למהירות טעינה ---
+        function skeletonRows(cols) {
+            return Array(3).fill('').map(() =>
+                `<tr class="skeleton-row">${Array(cols).fill('<td><span class="skel"></span></td>').join('')}</tr>`
+            ).join('');
+        }
 
         // הוספת וייבוא תלמידים
         window.addSingleStudent = async () => {
@@ -196,54 +176,58 @@
 
         function parseStudentData(jsonData) { return jsonData.map(row => ({ id: String(row['תעודת זהות'] || row['ID'] || row['ת"ז'] || '').trim(), name: String(row['שם'] || row['Name'] || '').trim() })).filter(s => s.id && s.name && s.id !== "undefined"); }
 
-        // --- 1. מחיקת תלמידים ---
-        window.fetchStudentsList = async () => {
+        // --- 1. תלמידים ---
+        function renderStudents(students) {
             const tbody = document.querySelector('#studentsListTable tbody');
             const totalBadge = document.getElementById('totalStudentsBadge');
-            try {
-                const timeout = new Promise((_, reject) => setTimeout(() => reject(new Error('Firebase לא הגיב – בדוק Security Rules ב-Firebase Console')), 8000));
-                const students = await Promise.race([CloudService.getStudents(), timeout]);
-                if (!students || students.length === 0) { tbody.innerHTML = '<tr><td colspan="3" style="text-align:center;">אין תלמידים במאגר</td></tr>'; totalBadge.innerText = ''; return; }
-                const validStudents = students.map(s => ({ id: s.id || '?', name: s.name || '?' }));
-                validStudents.sort((a, b) => String(a.name).localeCompare(String(b.name), 'he'));
-                totalBadge.innerText = `סה"כ מורשים במערכת: ${validStudents.length}`;
-                tbody.innerHTML = validStudents.map(s => `<tr><td>${s.name}</td><td>${s.id}</td><td style="text-align:center;"><button onclick="deleteStudentBtn('${s.id}')" class="btn-delete-small">מחק</button></td></tr>`).join('');
-            } catch (error) { tbody.innerHTML = `<tr><td colspan="3" style="text-align:center; color:#c0392b;">שגיאה: ${error.message}</td></tr>`; }
+            if (!students || students.length === 0) { tbody.innerHTML = '<tr><td colspan="3" style="text-align:center;">אין תלמידים במאגר</td></tr>'; totalBadge.innerText = ''; return; }
+            const validStudents = students.map(s => ({ id: s.id || '?', name: s.name || '?' }));
+            validStudents.sort((a, b) => String(a.name).localeCompare(String(b.name), 'he'));
+            totalBadge.innerText = `סה"כ מורשים במערכת: ${validStudents.length}`;
+            tbody.innerHTML = validStudents.map(s => `<tr><td>${s.name}</td><td>${s.id}</td><td style="text-align:center;"><button onclick="deleteStudentBtn('${s.id}')" class="btn-delete-small">מחק</button></td></tr>`).join('');
+        }
+        window.fetchStudentsList = async () => {
+            const tbody = document.querySelector('#studentsListTable tbody');
+            tbody.innerHTML = skeletonRows(3);
+            try { renderStudents(await CloudService.getStudents()); }
+            catch (error) { tbody.innerHTML = `<tr><td colspan="3" style="text-align:center; color:#c0392b;">שגיאה: ${error.message}</td></tr>`; }
         };
 
         window.deleteStudentBtn = async (id) => { if (confirm('האם אתה בטוח שברצונך למחוק תלמיד זה מהמאגר?')) { try { await CloudService.deleteStudent(id); fetchStudentsList(); } catch (e) { alert('שגיאה במחיקה'); } } };
 
-        // --- 2. מחיקת מבחנים ---
+        // --- 2. מבחנים ---
+        function renderExams(exams) {
+            const tbody = document.querySelector('#examsListTable tbody');
+            if (!exams || exams.length === 0) { tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:30px;">אין מבחנים במאגר.</td></tr>'; return; }
+            exams.sort((a, b) => (Number(b.createdAt) || 0) - (Number(a.createdAt) || 0));
+            tbody.innerHTML = exams.map(e => {
+                const isActive = e.active !== false;
+                const statusBadge = isActive
+                    ? `<span class="status-badge status-active">✅ פעיל לתלמידים</span>`
+                    : `<span class="status-badge status-inactive">🔴 מושהה</span>`;
+                const toggleBtn = isActive
+                    ? `<button class="btn-toggle-on" onclick="toggleExamBtn('${e.id}', true)" title="לחץ להשהות">השהה גישה</button>`
+                    : `<button class="btn-toggle-off" onclick="toggleExamBtn('${e.id}', false)" title="לחץ להפעיל">הפעל גישה</button>`;
+                return `
+                <tr style="opacity: ${isActive ? '1' : '0.65'}">
+                    <td><strong>${e.title || 'מבחן ללא שם'}</strong></td>
+                    <td>${e.createdAt ? new Date(e.createdAt).toLocaleString('he-IL') : 'לא ידוע'}</td>
+                    <td>${statusBadge}</td>
+                    <td>
+                        <div class="action-buttons">
+                            ${toggleBtn}
+                            <button class="btn-check" style="background:#27ae60;" onclick="editExamBtn('${e.id}')">✏️ ערוך</button>
+                            <button class="btn-delete-small" onclick="deleteExamBtn('${e.id}')">מחק</button>
+                        </div>
+                    </td>
+                </tr>`;
+            }).join('');
+        }
         window.fetchExamsList = async () => {
             const tbody = document.querySelector('#examsListTable tbody');
-            try {
-                const timeout = new Promise((_, reject) => setTimeout(() => reject(new Error('Firebase לא הגיב – בדוק Security Rules ב-Firebase Console')), 8000));
-                const exams = await Promise.race([CloudService.getAllExams(), timeout]);
-                if (!exams || exams.length === 0) { tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:30px;">אין מבחנים במאגר.</td></tr>'; return; }
-                exams.sort((a, b) => (Number(b.createdAt) || 0) - (Number(a.createdAt) || 0));
-                tbody.innerHTML = exams.map(e => {
-                    const isActive = e.active !== false; // ברירת מחדל: פעיל
-                    const statusBadge = isActive
-                        ? `<span class="status-badge status-active">✅ פעיל לתלמידים</span>`
-                        : `<span class="status-badge status-inactive">🔴 מושהה</span>`;
-                    const toggleBtn = isActive
-                        ? `<button class="btn-toggle-on" onclick="toggleExamBtn('${e.id}', true)" title="לחץ להשהות">השהה גישה</button>`
-                        : `<button class="btn-toggle-off" onclick="toggleExamBtn('${e.id}', false)" title="לחץ להפעיל">הפעל גישה</button>`;
-                    return `
-                    <tr style="opacity: ${isActive ? '1' : '0.65'}">
-                        <td><strong>${e.title || 'מבחן ללא שם'}</strong></td>
-                        <td>${e.createdAt ? new Date(e.createdAt).toLocaleString('he-IL') : 'לא ידוע'}</td>
-                        <td>${statusBadge}</td>
-                        <td>
-                            <div class="action-buttons">
-                                ${toggleBtn}
-                                <button class="btn-check" style="background:#27ae60;" onclick="editExamBtn('${e.id}')">✏️ ערוך</button>
-                                <button class="btn-delete-small" onclick="deleteExamBtn('${e.id}')">מחק</button>
-                            </div>
-                        </td>
-                    </tr>`;
-                }).join('');
-            } catch (error) { tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; color:#c0392b;">שגיאה: ${error.message}</td></tr>`; }
+            tbody.innerHTML = skeletonRows(4);
+            try { renderExams(await CloudService.getAllExams()); }
+            catch (error) { tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; color:#c0392b;">שגיאה: ${error.message}</td></tr>`; }
         };
 
         window.toggleExamBtn = async (id, currentActive) => {
@@ -259,26 +243,18 @@
             }
         };
 
-        // --- 3. הגשות תלמידים – האזנה חיה בזמן אמת (onSnapshot) ---
-        function renderSubmissionsTable(subs) {
+        // --- 3. הגשות ---
+        function renderSubmissions(subs) {
             const tbody = document.querySelector('#submissionsTable tbody');
-            if (!subs || subs.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:30px;">אין הגשות כרגע במערכת.</td></tr>';
-                return;
-            }
+            if (!subs || subs.length === 0) { tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:30px;">אין הגשות כרגע במערכת.</td></tr>'; return; }
             subs.sort((a, b) => (Number(b.lastUpdate) || 0) - (Number(a.lastUpdate) || 0));
-            // שמירת מצב צ'קבוקסים פעילים לפני רינדור מחדש
-            const checkedIds = new Set([...document.querySelectorAll('.sub-row-chk:checked')].map(el => el.dataset.subId));
             tbody.innerHTML = subs.map(sub => {
                 let statusLabel = 'במהלך פתרון', statusClass = 'status-progress';
                 if (sub.status === 'submitted') { statusLabel = 'הוגש סופית'; statusClass = 'status-submitted'; }
                 else if (sub.status === 'graded') { statusLabel = 'נבדק ע"י מורה'; statusClass = 'status-submitted'; }
                 const dateStr = sub.lastUpdate ? new Date(sub.lastUpdate).toLocaleString('he-IL') : 'לא ידוע';
                 const subId = `${sub.studentID}_${sub.examID}`;
-                const safeStudentName = (sub.studentName || sub.studentID || '').replace(/'/g, "\'");
-                const wasChecked = checkedIds.has(subId) ? 'checked' : '';
-                return `<tr data-sub-id="${subId}" data-student-name="${sub.studentName || ''}" data-exam-title="${sub.examTitle || sub.examID || ''}" data-exam-id="${sub.examID || ''}">
-                    <td style="text-align:center;"><input type="checkbox" class="sub-checkbox sub-row-chk" data-sub-id="${subId}" ${wasChecked} onchange="onRowCheckboxChange()"></td>
+                return `<tr>
                     <td><strong>${sub.studentName || '---'}</strong></td>
                     <td>${sub.studentID || '---'}</td>
                     <td>${sub.examTitle || sub.examID || 'מבחן'}</td>
@@ -287,42 +263,22 @@
                     <td>
                         <div class="action-buttons">
                             <button class="btn-check" style="background:#8e44ad;" onclick="window.open('grade_exam.html?subId=${subId}', '_blank')">פתח לבדיקה</button>
-                            <button class="btn-check" style="background:#e67e22;" onclick="showSnapshotsModal('${subId}', '${safeStudentName}')">🕐 גרסאות</button>
                             <button class="btn-delete-small" onclick="deleteSubmissionBtn('${subId}')">מחק הגשה</button>
                         </div>
                     </td>
                 </tr>`;
             }).join('');
-            updateBulkBar();
         }
-
-        // fetchSubmissions נשאר זמין לכפתור הרענן הידני
         window.fetchSubmissions = async () => {
-            try {
-                const subs = await CloudService.getSubmissions();
-                renderSubmissionsTable(subs);
-            } catch (error) {
-                document.querySelector('#submissionsTable tbody').innerHTML =
-                    `<tr><td colspan="7" style="text-align:center; color:#c0392b;">שגיאה: ${error.message}</td></tr>`;
-            }
-        };
-
-        // הפעלת ה-listener החי – מעדכן אוטומטית כל אימת שתלמיד שומר
-        function startSubmissionsListener() {
             const tbody = document.querySelector('#submissionsTable tbody');
-            // timeout אם Firebase לא מגיב תוך 8 שניות
-            const timer = setTimeout(() => {
-                tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; color:#c0392b; padding:20px;">⚠️ Firebase לא הגיב – בדוק Security Rules ב-Firebase Console<br><small style="color:#95a5a6;">כנס ל-Firebase Console → Firestore Database → Rules והגדר read: true</small></td></tr>';
-            }, 8000);
-            CloudService.subscribeSubmissions(
-                subs => { clearTimeout(timer); renderSubmissionsTable(subs); },
-                err => { clearTimeout(timer); tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; color:#c0392b; padding:20px;">❌ שגיאת Firebase: ${err.message}</td></tr>`; }
-            );
-        }
+            tbody.innerHTML = skeletonRows(6);
+            try { renderSubmissions(await CloudService.getSubmissions()); }
+            catch (error) { tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; color:#c0392b;">שגיאה: ${error.message}</td></tr>`; }
+        };
 
         window.deleteSubmissionBtn = async (subID) => {
             if (confirm('אזהרה: האם אתה בטוח שברצונך למחוק את נתוני ההגשה של תלמיד זה?\nהפעולה תמחק את כל התשובות שלו ללא אפשרות שחזור!')) {
-                try { await CloudService.deleteSubmission(subID); } catch (e) { alert('שגיאה במחיקת ההגשה: ' + e.message); }
+                try { await CloudService.deleteSubmission(subID); fetchSubmissions(); } catch (e) { alert('שגיאה במחיקת ההגשה: ' + e.message); }
             }
         };
 
@@ -348,312 +304,23 @@
             }
         };
 
-        // מודול ES רץ deferred – הDOM מוכן, קוראים ישירות
-        fetchStudentsList();
-        fetchExamsList();
-        startSubmissionsListener();
+        // --- טעינה מקבילית של כל הנתונים בבת אחת ---
+        window.onload = async () => {
+            // מציג skeleton מיד
+            document.querySelector('#studentsListTable tbody').innerHTML = skeletonRows(3);
+            document.querySelector('#examsListTable tbody').innerHTML = skeletonRows(4);
+            document.querySelector('#submissionsTable tbody').innerHTML = skeletonRows(6);
 
-        // ===== בחירה מרובה =====
-        window.onRowCheckboxChange = () => updateBulkBar();
-
-        function updateBulkBar() {
-            const checked = document.querySelectorAll('.sub-row-chk:checked');
-            const bar = document.getElementById('bulkActionsBar');
-            const countEl = document.getElementById('selectedCount');
-            countEl.innerText = `${checked.length} נבחרו`;
-            bar.classList.toggle('visible', checked.length > 0);
-            const allChks = document.querySelectorAll('.sub-row-chk');
-            document.getElementById('selectAllChk').checked = allChks.length > 0 && checked.length === allChks.length;
-        }
-
-        window.toggleSelectAll = (checked) => {
-            document.querySelectorAll('.sub-row-chk').forEach(chk => chk.checked = checked);
-            updateBulkBar();
-        };
-
-        window.selectAllSubmissions = () => {
-            document.querySelectorAll('.sub-row-chk').forEach(chk => chk.checked = true);
-            document.getElementById('selectAllChk').checked = true;
-            updateBulkBar();
-        };
-
-        window.clearSelection = () => {
-            document.querySelectorAll('.sub-row-chk').forEach(chk => chk.checked = false);
-            document.getElementById('selectAllChk').checked = false;
-            updateBulkBar();
-        };
-
-        // ===== הורדת PDF+ZIP =====
-        window.downloadSelectedAsPDFZip = async () => {
-            const checkedRows = document.querySelectorAll('.sub-row-chk:checked');
-            if (checkedRows.length === 0) { alert('לא נבחרו הגשות.'); return; }
-
-            const overlay = document.getElementById('pdfProgressOverlay');
-            const fill = document.getElementById('pdfProgressFill');
-            const progressText = document.getElementById('pdfProgressText');
-            overlay.classList.add('visible');
-            fill.style.width = '0%';
-
-            const zip = new JSZip();
-            const total = checkedRows.length;
-
-            for (let i = 0; i < total; i++) {
-                const row = checkedRows[i].closest('tr');
-                const subId = row.dataset.subId;
-                const studentName = row.dataset.studentName || subId;
-                const examTitle = row.dataset.examTitle || 'מבחן';
-                const pct = Math.round(((i) / total) * 100);
-                fill.style.width = pct + '%';
-                progressText.innerText = `מכין ${i + 1} מתוך ${total}: ${studentName}...`;
-
-                try {
-                    const pdfBytes = await buildSubmissionPDF(subId, studentName, examTitle);
-                    if (pdfBytes) {
-                        const safeName = (studentName + '_' + examTitle).replace(/[^א-תa-zA-Z0-9_\-]/g, '_').substring(0, 60);
-                        zip.file(safeName + '.pdf', pdfBytes);
-                    }
-                } catch(e) {
-                    console.error('שגיאה בהגשה', subId, e);
-                }
-            }
-
-            fill.style.width = '95%';
-            progressText.innerText = 'יוצר קובץ ZIP...';
-
+            // מושך הכל במקביל
             try {
-                const zipBlob = await zip.generateAsync({ type: 'blob', compression: 'DEFLATE', compressionOptions: { level: 6 } });
-                const url = URL.createObjectURL(zipBlob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = `הגשות_${new Date().toLocaleDateString('he-IL').replace(/\//g,'-')}.zip`;
-                document.body.appendChild(a);
-                a.click();
-                setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 2000);
-            } finally {
-                fill.style.width = '100%';
-                setTimeout(() => { overlay.classList.remove('visible'); }, 600);
-            }
-        };
-
-        async function buildSubmissionPDF(subId, studentName, examTitle) {
-            // שואב הגשה + מבחן
-            const sub = await CloudService.getSubmission(subId);
-            if (!sub) throw new Error('הגשה לא נמצאה');
-
-            const examData = await CloudService.getExam(sub.examID);
-            if (!examData || !examData.htmlContent) throw new Error('תוכן מבחן לא נמצא');
-
-            // בונה iframe נסתר, מזריק HTML + תשובות, מצלם
-            return await renderSubmissionToPDF(examData.htmlContent, sub, studentName, examTitle);
-        }
-
-        function renderSubmissionToPDF(htmlContent, sub, studentName, examTitle) {
-            return new Promise((resolve, reject) => {
-                // iframe מחוץ למסך
-                const iframe = document.createElement('iframe');
-                iframe.style.cssText = 'position:fixed;top:-9999px;left:-9999px;width:900px;height:1200px;opacity:0;pointer-events:none;';
-                document.body.appendChild(iframe);
-
-                const cleanup = () => { try { document.body.removeChild(iframe); } catch(e){} };
-
-                iframe.onload = () => {
-                    try {
-                        const iDoc = iframe.contentDocument;
-                        // הסתרת מסך פתיחה וטיימר
-                        const startScr = iDoc.getElementById('startScreen');
-                        if (startScr) startScr.style.display = 'none';
-                        const timerB = iDoc.getElementById('timerBadge');
-                        if (timerB) timerB.style.display = 'none';
-                        const mainCont = iDoc.getElementById('mainContainer');
-                        if (mainCont) { mainCont.style.filter = 'none'; mainCont.style.display = 'block'; }
-                        // הצגת כל החלקים
-                        iDoc.querySelectorAll('.exam-section').forEach(s => s.style.display = 'block');
-                        // שיבוץ שם
-                        const nameField = iDoc.getElementById('studentNameField');
-                        if (nameField) nameField.value = studentName;
-                        // שיבוץ תשובות
-                        if (sub.answers) {
-                            for (const [id, val] of Object.entries(sub.answers)) {
-                                const el = iDoc.getElementById(id);
-                                if (el) { el.value = val; }
-                            }
-                        }
-                        // הסתרת כפתורים לא רלוונטיים
-                        iDoc.querySelectorAll('#highlighterTool, #timesUpModal, #successModal, .mic-btn, #btnCloudSave, .student-submit-area, #videoModal').forEach(el => { if(el) el.style.display = 'none'; });
-                        // הצגת כל ה-grading areas אם יש ציונים
-                        iDoc.querySelectorAll('.grading-area').forEach(el => el.style.display = 'block');
-
-                        // כותרת PDF בראש
-                        const header = iDoc.createElement('div');
-                        const dateStr = sub.lastUpdate ? new Date(sub.lastUpdate).toLocaleString('he-IL') : '';
-                        const gradeStr = sub.grade ? ` | ציון: ${sub.grade}` : '';
-                        header.style.cssText = 'background:#2c3e50;color:white;padding:14px 20px;font-family:Arial,sans-serif;font-size:14px;direction:rtl;margin-bottom:10px;';
-                        header.innerHTML = `<strong>${examTitle}</strong> &nbsp;|&nbsp; ${studentName}${gradeStr} &nbsp;|&nbsp; <span style="opacity:0.8;font-size:12px;">${dateStr}</span>`;
-                        iDoc.body.insertBefore(header, iDoc.body.firstChild);
-
-                        // המתנה קצרה לרינדור, ואז html2canvas
-                        setTimeout(() => {
-                            const target = iDoc.body;
-                            html2canvas(target, {
-                                scale: 1.5,
-                                useCORS: true,
-                                allowTaint: true,
-                                backgroundColor: '#ffffff',
-                                windowWidth: 900,
-                                scrollX: 0,
-                                scrollY: 0,
-                                height: target.scrollHeight,
-                                width: 900
-                            }).then(canvas => {
-                                cleanup();
-                                try {
-                                    const { jsPDF } = window.jspdf;
-                                    const pdf = new jsPDF({ orientation: 'portrait', unit: 'pt', format: 'a4' });
-                                    const pageW = pdf.internal.pageSize.getWidth();
-                                    const pageH = pdf.internal.pageSize.getHeight();
-                                    const imgW = pageW;
-                                    const imgH = (canvas.height * imgW) / canvas.width;
-                                    const imgData = canvas.toDataURL('image/jpeg', 0.85);
-                                    let y = 0;
-                                    while (y < imgH) {
-                                        if (y > 0) pdf.addPage();
-                                        pdf.addImage(imgData, 'JPEG', 0, -y, imgW, imgH);
-                                        y += pageH;
-                                    }
-                                    resolve(pdf.output('arraybuffer'));
-                                } catch(e) { reject(e); }
-                            }).catch(e => { cleanup(); reject(e); });
-                        }, 600);
-                    } catch(e) { cleanup(); reject(e); }
-                };
-
-                iframe.onerror = () => { cleanup(); reject(new Error('iframe error')); };
-
-                // כתיבת ה-HTML ל-iframe
-                iframe.contentDocument.open();
-                iframe.contentDocument.write(htmlContent);
-                iframe.contentDocument.close();
-            });
-        }
-    </script>
-
-    <!-- Progress overlay for PDF download -->
-    <div id="pdfProgressOverlay">
-        <div id="pdfProgressBox">
-            <div style="font-size:2rem; margin-bottom:10px;">📄</div>
-            <h3 style="margin:0 0 5px; color:#2c3e50;">מכין קבצי PDF...</h3>
-            <div id="pdfProgressBar"><div id="pdfProgressFill"></div></div>
-            <div id="pdfProgressText" style="color:#7f8c8d; font-size:0.9rem;">מכין...</div>
-            <p style="font-size:0.8rem; color:#bdc3c7; margin-top:12px;">אנא המתן – הורדת ה-ZIP תתחיל אוטומטית</p>
-        </div>
-    </div>
-
-    <!-- מודל גרסאות היסטוריות -->
-    <div id="snapshotsModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:99999; align-items:center; justify-content:center;">
-        <div style="background:white; border-radius:14px; padding:30px; max-width:700px; width:90%; max-height:80vh; display:flex; flex-direction:column; box-shadow:0 10px 40px rgba(0,0,0,0.3); direction:rtl;">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; border-bottom:2px solid #eee; padding-bottom:15px;">
-                <h2 style="margin:0; color:#2c3e50; font-size:1.3rem;">🕐 גרסאות היסטוריות - <span id="snapshotsStudentName"></span></h2>
-                <button onclick="closeSnapshotsModal()" style="background:#e74c3c; color:white; border:none; border-radius:6px; padding:8px 16px; cursor:pointer; font-weight:bold;">✕ סגור</button>
-            </div>
-            <p style="color:#7f8c8d; font-size:0.9rem; margin-bottom:15px;">גרסאות נשמרות אוטומטית כל 10 דקות. לחץ על גרסה לשחזור.</p>
-            <div id="snapshotsList" style="overflow-y:auto; flex:1;">
-                <p style="text-align:center; color:#95a5a6;">טוען גרסאות...</p>
-            </div>
-        </div>
-    </div>
-
-    <!-- מודל תצוגת גרסה -->
-    <div id="snapshotViewModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:100000; align-items:center; justify-content:center;">
-        <div style="background:white; border-radius:14px; padding:30px; max-width:800px; width:95%; max-height:85vh; display:flex; flex-direction:column; box-shadow:0 10px 40px rgba(0,0,0,0.4); direction:rtl;">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; border-bottom:2px solid #eee; padding-bottom:12px;">
-                <h3 style="margin:0; color:#2c3e50;" id="snapshotViewTitle">תצוגת גרסה</h3>
-                <div style="display:flex; gap:10px;">
-                    <button id="restoreSnapshotBtn" style="background:#27ae60; color:white; border:none; border-radius:6px; padding:8px 16px; cursor:pointer; font-weight:bold;">🔄 שחזר גרסה זו</button>
-                    <button onclick="closeSnapshotViewModal()" style="background:#95a5a6; color:white; border:none; border-radius:6px; padding:8px 16px; cursor:pointer;">סגור</button>
-                </div>
-            </div>
-            <div id="snapshotViewContent" style="overflow-y:auto; flex:1; font-size:0.95rem; line-height:1.7;"></div>
-        </div>
-    </div>
-
-        // ===== גרסאות היסטוריות (snapshots) =====
-        let _currentSubId = null;
-
-        window.showSnapshotsModal = async (subId, studentName) => {
-            _currentSubId = subId;
-            document.getElementById('snapshotsStudentName').innerText = studentName;
-            document.getElementById('snapshotsList').innerHTML = '<p style="text-align:center; color:#95a5a6; padding:20px;">טוען גרסאות...</p>';
-            document.getElementById('snapshotsModal').style.display = 'flex';
-            try {
-                const snapshots = await CloudService.getSubmissionSnapshots(subId);
-                if (!snapshots || snapshots.length === 0) {
-                    document.getElementById('snapshotsList').innerHTML = '<p style="text-align:center; color:#95a5a6; padding:20px;">אין גרסאות שמורות עדיין.<br><small>גרסאות נשמרות כל 10 דקות בזמן המבחן.</small></p>';
-                    return;
-                }
-                document.getElementById('snapshotsList').innerHTML = snapshots.map((snap, i) => {
-                    const date = snap.snapshotAt ? new Date(snap.snapshotAt).toLocaleString('he-IL') : 'לא ידוע';
-                    const answersCount = snap.answers ? Object.values(snap.answers).filter(v => v && v.trim()).length : 0;
-                    return `<div style="border:1px solid #eee; border-radius:8px; padding:14px; margin-bottom:10px; background:#fafafa; display:flex; justify-content:space-between; align-items:center;">
-                        <div>
-                            <strong style="color:#2c3e50;">גרסה ${snapshots.length - i}</strong>
-                            <span style="color:#7f8c8d; margin-right:12px; font-size:0.9rem;">📅 ${date}</span>
-                            <span style="color:#3498db; font-size:0.85rem; margin-right:10px;">${answersCount} שדות מולאו</span>
-                        </div>
-                        <div style="display:flex; gap:8px;">
-                            <button onclick="viewSnapshot('${snap.id}', ${JSON.stringify(snap.answers).replace(/"/g,'&quot;')}, '${date}')" style="background:#3498db; color:white; border:none; border-radius:5px; padding:6px 14px; cursor:pointer; font-size:0.85rem;">👁 צפה</button>
-                            <button onclick="restoreSnapshot('${subId}', '${snap.id}')" style="background:#27ae60; color:white; border:none; border-radius:5px; padding:6px 14px; cursor:pointer; font-size:0.85rem;">🔄 שחזר</button>
-                        </div>
-                    </div>`;
-                }).join('');
-            } catch(e) {
-                document.getElementById('snapshotsList').innerHTML = `<p style="color:#e74c3c; text-align:center;">שגיאה: ${e.message}</p>`;
-            }
-        };
-
-        window.closeSnapshotsModal = () => {
-            document.getElementById('snapshotsModal').style.display = 'none';
-        };
-
-        window.viewSnapshot = (snapId, answers, date) => {
-            document.getElementById('snapshotViewTitle').innerText = `תצוגת גרסה - ${date}`;
-            const content = document.getElementById('snapshotViewContent');
-            if (!answers || Object.keys(answers).length === 0) {
-                content.innerHTML = '<p style="color:#95a5a6; text-align:center;">אין תשובות בגרסה זו.</p>';
-            } else {
-                const rows = Object.entries(answers)
-                    .filter(([k,v]) => v && v.trim())
-                    .map(([k,v]) => `<div style="border-bottom:1px solid #eee; padding:10px 0;"><strong style="color:#3498db; font-size:0.85rem;">${k}:</strong><div style="margin-top:5px; white-space:pre-wrap; color:#2c3e50;">${v}</div></div>`)
-                    .join('');
-                content.innerHTML = rows || '<p style="color:#95a5a6; text-align:center;">כל השדות ריקים בגרסה זו.</p>';
-            }
-            // שמירת ה-subId + snapId לכפתור השחזור
-            document.getElementById('restoreSnapshotBtn').onclick = () => restoreSnapshot(_currentSubId, snapId);
-            document.getElementById('snapshotViewModal').style.display = 'flex';
-        };
-
-        window.closeSnapshotViewModal = () => {
-            document.getElementById('snapshotViewModal').style.display = 'none';
-        };
-
-        window.restoreSnapshot = async (subId, snapId) => {
-            if (!confirm('האם לשחזר גרסה זו? הפעולה תדרוס את הנתונים הנוכחיים של התלמיד.')) return;
-            try {
-                const snapshots = await CloudService.getSubmissionSnapshots(subId);
-                const snap = snapshots.find(s => s.id === snapId);
-                if (!snap) { alert('גרסה לא נמצאה.'); return; }
-                const existing = await CloudService.getSubmission(subId) || {};
-                await CloudService.saveSubmission({
-                    ...existing,
-                    answers: snap.answers,
-                    lastUpdate: Date.now(),
-                    status: 'in-progress',
-                    restoredFrom: snapId
-                });
-                alert('✅ הגרסה שוחזרה בהצלחה! התלמיד יראה את התשובות בפתיחה הבאה.');
-                closeSnapshotViewModal();
-                closeSnapshotsModal();
-            } catch(e) {
-                alert('שגיאה בשחזור: ' + e.message);
+                const { students, exams, submissions } = await CloudService.getDashboardData();
+                renderStudents(students);
+                renderExams(exams);
+                renderSubmissions(submissions);
+            } catch (err) {
+                console.error('Dashboard load error:', err);
+                // fallback: טעינה נפרדת
+                fetchStudentsList(); fetchExamsList(); fetchSubmissions();
             }
         };
     </script>

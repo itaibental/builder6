@@ -27,7 +27,7 @@ window.HTMLBuilder = {
                 qHtml = partQuestions.map((q, qIdx) => {
                     // שליפת וידאו ותמונה - מתוקן
                     const embedSrc = (myUtils && q.videoUrl) ? myUtils.getVideoEmbedUrl(q.videoUrl, q.videoOptions) : '';
-                    let vid = embedSrc ? `<div class="video-wrapper"><div class="video-shield"></div><iframe src="${embedSrc}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe><button class="video-expand-btn" onclick="openVideoModal('${embedSrc}')" title="הגדל סרטון">⛶ הגדל</button></div>` : '';
+                    let vid = embedSrc ? `<div class="video-wrapper"><div class="video-shield"></div><iframe src="${embedSrc}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div>` : '';
                     
                     const imgSrc = (myUtils && q.imageUrl) ? myUtils.getImageSrc(q.imageUrl) : (q.imageUrl || '');
                     let img = imgSrc ? `<div class="image-wrapper"><img src="${imgSrc}" alt="Question Image"></div>` : '';
@@ -43,7 +43,7 @@ window.HTMLBuilder = {
                             
                             // שליפת וידאו ותמונה עבור תתי-שאלות - מתוקן
                             const sqEmbedSrc = (myUtils && sq.videoUrl) ? myUtils.getVideoEmbedUrl(sq.videoUrl, { showControls: true, modestBranding: true }) : '';
-                            let sqVid = sqEmbedSrc ? `<div class="video-wrapper"><div class="video-shield"></div><iframe src="${sqEmbedSrc}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe><button class="video-expand-btn" onclick="openVideoModal('${sqEmbedSrc}')" title="הגדל סרטון">⛶ הגדל</button></div>` : '';
+                            let sqVid = sqEmbedSrc ? `<div class="video-wrapper"><div class="video-shield"></div><iframe src="${sqEmbedSrc}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div>` : '';
                             
                             const sqImgSrc = (myUtils && sq.imageUrl) ? myUtils.getImageSrc(sq.imageUrl) : (sq.imageUrl || '');
                             let sqImg = sqImgSrc ? `<div class="image-wrapper"><img src="${sqImgSrc}" alt="SubQ Image"></div>` : '';
@@ -127,43 +127,8 @@ window.HTMLBuilder = {
 
         return `<!DOCTYPE html><html lang="he" dir="rtl"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>מבחן - ${studentName}</title><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;700&display=swap"><style>
         :root{--primary:#2c3e50;--accent:#3498db;--success:#27ae60;--danger:#e74c3c;}
-
-        /* ===== Light Mode (default) ===== */
-        body{font-family:'Rubik',sans-serif;background:${bgColor};margin:0;padding:2%;color:#2c3e50;font-size:18px;line-height:1.5; user-select: text; transition: background 0.3s, color 0.3s;} 
-        .container{max-width:800px;margin:0 auto;background:white;padding:5%;border-radius:1em;box-shadow:0 1vh 3vh rgba(0,0,0,0.05); transition: background 0.3s, color 0.3s, box-shadow 0.3s;}
-
-        /* ===== Dark Mode ===== */
-        body.dark-mode { background: #121212 !important; color: #e0e0e0 !important; }
-        body.dark-mode .container { background: #1e1e1e !important; box-shadow: 0 1vh 3vh rgba(0,0,0,0.4) !important; color: #e0e0e0 !important; }
-        body.dark-mode textarea { background: #2a2a2a !important; color: #e0e0e0 !important; border-color: #444 !important; }
-        body.dark-mode textarea::placeholder { color: #888 !important; }
-        body.dark-mode input[type="text"], body.dark-mode input[type="password"], body.dark-mode input[type="number"] { background: #2a2a2a !important; color: #e0e0e0 !important; border-color: #444 !important; }
-        body.dark-mode .q-block { border-bottom-color: #333 !important; }
-        body.dark-mode .sub-question-block { border-top-color: #333 !important; }
-        body.dark-mode .tab-btn { background: #2a2a2a !important; color: #ccc !important; }
-        body.dark-mode .tab-btn.active { background: var(--accent) !important; color: white !important; }
-        body.dark-mode .part-instructions { background: #1a2e2a !important; color: #7ed6c1 !important; border-color: #2ecc71 !important; }
-        body.dark-mode .grading-area { background: #1a1a1a !important; border-top-color: #444 !important; }
-        body.dark-mode .teacher-controls { background: #2a1f0f !important; border-color: #f39c12 !important; }
-        body.dark-mode .model-answer-secret { background: #2a2510 !important; border-color: #856404 !important; color: #f0d060 !important; }
-        body.dark-mode #timerBadge { background: #1e1e1e !important; color: #e0e0e0 !important; border-color: #555 !important; }
-        body.dark-mode #highlighterTool { background: #1e1e1e !important; border-color: #444 !important; }
-        body.dark-mode .mic-btn { background: #2a2a2a !important; border-color: #555 !important; }
-        body.dark-mode > div[style*="border:1px solid var(--accent)"] { background: #1a2030 !important; }
-        body.dark-mode h1, body.dark-mode h2, body.dark-mode h3, body.dark-mode h4, body.dark-mode label, body.dark-mode strong { color: #e0e0e0 !important; }
-        body.dark-mode .q-content, body.dark-mode .sub-q-text { color: #e0e0e0 !important; }
-        body.dark-mode div[style*="background:#fff"], body.dark-mode div[style*="background: #fff"] { background: #1e2a3a !important; border-color: #3a6ea8 !important; }
-        body.dark-mode div[style*="border:1px solid var(--accent)"] { background: #1a2535 !important; }
-        body.dark-mode .student-submit-area button { background: #27ae60 !important; }
-        body.dark-mode #btnCloudSave { background: #1a6a9a !important; }
-        body.dark-mode .image-wrapper img { box-shadow: 0 2px 10px rgba(0,0,0,0.5) !important; }
-        body.dark-mode .q-block:last-child { border-bottom: none !important; }
-
-        /* כפתור מתג מצב */
-        #themeSwitcher { position: fixed; top: 10px; left: 115px; z-index: 6000; background: #1e1e1e; color: #f1c40f; border: 2px solid #555; border-radius: 20px; padding: 6px 14px; font-size: 1rem; cursor: pointer; font-weight: bold; transition: all 0.25s; display: none; user-select: none; box-shadow: 0 2px 8px rgba(0,0,0,0.25); }
-        body.dark-mode #themeSwitcher { background: #f1c40f; color: #1e1e1e; border-color: #e0a800; }
-        #themeSwitcher:hover { transform: scale(1.07); }
-        @media (max-width: 768px) { #themeSwitcher { top: 8px; left: auto; right: 70px; font-size: 0.85rem; padding: 5px 10px; } }
+        body{font-family:'Rubik',sans-serif;background:${bgColor};margin:0;padding:2%;color:#2c3e50;font-size:18px;line-height:1.5; user-select: text;} 
+        .container{max-width:800px;margin:0 auto;background:white;padding:5%;border-radius:1em;box-shadow:0 1vh 3vh rgba(0,0,0,0.05);}
         textarea{width:100%;height:20vh;padding:2vh;border:1px solid #ccc;border-radius:0.8em;font-family:inherit;font-size:1rem; user-select: text;}
         button{cursor:pointer;}
         .tab-btn{padding:10px 20px;background:#eee;border:none;margin:5px;border-radius:20px;font-size:1rem;}
@@ -176,14 +141,6 @@ window.HTMLBuilder = {
         .video-wrapper { position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; width: 100%; max-width: 100%; margin: 20px 0; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
         .video-wrapper iframe { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: 0; }
         .video-shield { position: absolute; top: 0; left: 0; width: 100%; height: 15%; z-index: 10; background: transparent; }
-        .video-expand-btn { position: absolute; bottom: 8px; left: 8px; z-index: 20; background: rgba(0,0,0,0.65); color: white; border: none; border-radius: 6px; padding: 5px 10px; font-size: 0.85rem; cursor: pointer; transition: background 0.2s; }
-        .video-expand-btn:hover { background: rgba(0,0,0,0.9); }
-        #videoModal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 99999; align-items: center; justify-content: center; flex-direction: column; }
-        #videoModal.open { display: flex; }
-        #videoModalInner { position: relative; width: min(90vw, 1100px); }
-        #videoModalInner .video-wrapper { margin: 0; border-radius: 10px; box-shadow: 0 8px 40px rgba(0,0,0,0.6); }
-        #videoModalClose { position: absolute; top: -40px; left: 0; background: #e74c3c; color: white; border: none; border-radius: 6px; padding: 7px 18px; font-size: 1rem; cursor: pointer; font-weight: bold; transition: background 0.2s; }
-        #videoModalClose:hover { background: #c0392b; }
         .image-wrapper { text-align: center; margin: 20px 0; width: 100%; }
         .image-wrapper img { max-width: 100%; height: auto; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); display: block; margin: 0 auto; }
         
@@ -287,17 +244,6 @@ window.HTMLBuilder = {
         </div>
         
         <div id="timerBadge">זמן: <span id="timerText">--:--</span></div>
-        <button id="themeSwitcher" onclick="toggleTheme()" title="החלף בין מצב בהיר לכהה">🌙 כהה</button>
-        
-        <!-- חלון קופץ לסרטון מוגדל -->
-        <div id="videoModal">
-            <div id="videoModalInner">
-                <button id="videoModalClose" onclick="closeVideoModal()">✕ סגור</button>
-                <div class="video-wrapper">
-                    <iframe id="videoModalIframe" src="" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
-                </div>
-            </div>
-        </div>
         
         <div id="timesUpModal">
             <h2>🛑 הזמן נגמר!</h2>
@@ -490,135 +436,19 @@ window.HTMLBuilder = {
             document.getElementById('mainContainer').style.filter='none';
             document.getElementById('timerBadge').style.display='block';
             document.getElementById('highlighterTool').style.display='flex';
-            document.getElementById('themeSwitcher').style.display='block';
-            initTheme();
             examStarted=true; runTimer(); updateTimer();
-            // שחזור תשובות קיימות מהענן
-            restoreAnswersFromCloud();
             
-            // שמירה אוטומטית רגילה כל 90 שניות
             setInterval(() => {
                 if(examStarted && document.body.dataset.status !== 'submitted' && document.body.dataset.status !== 'grading') {
                     saveProgressToCloud(false, true);
                 }
-            }, 90000);
-            // שמירת snapshot היסטורי כל 10 דקות
-            setInterval(() => {
-                if(examStarted && document.body.dataset.status !== 'submitted' && document.body.dataset.status !== 'grading') {
-                    saveSnapshotToCloud();
-                }
-            }, 600000);
+            }, 40000);
         }
         function runTimer(){clearInterval(timerInterval);timerInterval=setInterval(()=>{totalTime--;updateTimer();if(totalTime<=0){clearInterval(timerInterval);document.getElementById('timesUpModal').style.display='flex';}},1000);}
         function updateTimer(){let m=Math.floor(totalTime/60),s=totalTime%60;document.getElementById('timerText').innerText=(m<10?'0'+m:m)+':'+(s<10?'0'+s:s);}
         function showPart(id){document.querySelectorAll('.exam-section').forEach(e=>e.classList.remove('active'));document.getElementById('part-'+id).classList.add('active');document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));event.target.classList.add('active');}
         function calcTotal(){ let t=0; document.querySelectorAll('.grade-input').forEach(i=>{ if(i.value) t += parseFloat(i.value); }); const display = document.getElementById('teacherCalculatedScore'); if(display) display.innerText = t; }
         
-        // ===== פונקציות Dark / Light Mode =====
-        function applyTheme(mode) {
-            if (mode === 'dark') {
-                document.body.classList.add('dark-mode');
-                const btn = document.getElementById('themeSwitcher');
-                if (btn) btn.innerHTML = '☀️ בהיר';
-            } else {
-                document.body.classList.remove('dark-mode');
-                const btn = document.getElementById('themeSwitcher');
-                if (btn) btn.innerHTML = '🌙 כהה';
-            }
-        }
-        function toggleTheme() {
-            const isDark = document.body.classList.contains('dark-mode');
-            const newMode = isDark ? 'light' : 'dark';
-            applyTheme(newMode);
-            try { localStorage.setItem('examTheme', newMode); } catch(e){}
-        }
-        function initTheme() {
-            try {
-                const saved = localStorage.getItem('examTheme');
-                if (saved) applyTheme(saved);
-            } catch(e){}
-        }
-
-        // ===== פונקציות חלון קופץ לסרטון =====
-        function openVideoModal(src) {
-            const modal = document.getElementById('videoModal');
-            const iframe = document.getElementById('videoModalIframe');
-            if (!modal || !iframe) return;
-            iframe.src = src;
-            modal.classList.add('open');
-        }
-        function closeVideoModal() {
-            const modal = document.getElementById('videoModal');
-            const iframe = document.getElementById('videoModalIframe');
-            if (!modal || !iframe) return;
-            modal.classList.remove('open');
-            // עצירת הסרטון ע"י ניקוי ה-src
-            iframe.src = '';
-        }
-        // סגירה בלחיצה מחוץ לסרטון
-        document.addEventListener('DOMContentLoaded', () => {
-            const modal = document.getElementById('videoModal');
-            if (modal) {
-                modal.addEventListener('click', (e) => {
-                    if (e.target === modal) closeVideoModal();
-                });
-            }
-        });
-
-        // ===== שחזור תשובות מהענן =====
-        async function restoreAnswersFromCloud() {
-            const studentID = localStorage.getItem('studentID');
-            const examID = localStorage.getItem('activeExamID');
-            if (!studentID || !examID) return;
-            try {
-                const module = await import('./js/firebase-service.js');
-                const subId = studentID + '_' + examID;
-                const existing = await module.CloudService.getSubmission(subId);
-                if (existing && existing.answers && existing.status !== 'submitted') {
-                    const answers = existing.answers;
-                    let restoredCount = 0;
-                    document.querySelectorAll('.student-ans').forEach(el => {
-                        if (answers[el.id] !== undefined && answers[el.id] !== '') {
-                            el.value = answers[el.id];
-                            restoredCount++;
-                        }
-                    });
-                    if (restoredCount > 0) {
-                        // הצגת הודעת שחזור
-                        const restoreMsg = document.createElement('div');
-                        restoreMsg.id = 'restoreNotice';
-                        restoreMsg.style.cssText = 'position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#27ae60;color:white;padding:12px 24px;border-radius:30px;font-size:1rem;z-index:99998;box-shadow:0 4px 15px rgba(0,0,0,0.2);direction:rtl;';
-                        const lastDate = existing.lastUpdate ? new Date(existing.lastUpdate).toLocaleString('he-IL') : '';
-                        restoreMsg.innerText = '✅ תשובות שוחזרו מהשמירה האחרונה' + (lastDate ? ' (' + lastDate + ')' : '');
-                        document.body.appendChild(restoreMsg);
-                        setTimeout(() => { if(restoreMsg.parentNode) restoreMsg.parentNode.removeChild(restoreMsg); }, 5000);
-                    }
-                }
-            } catch(e) { console.log('שחזור תשובות נכשל:', e); }
-        }
-
-        // ===== שמירת snapshot היסטורי =====
-        async function saveSnapshotToCloud() {
-            const studentID = localStorage.getItem('studentID');
-            const examID = localStorage.getItem('activeExamID');
-            const studentName = localStorage.getItem('studentName') || 'תלמיד';
-            if (!studentID || !examID) return;
-            const answers = {};
-            document.querySelectorAll('.student-ans').forEach(el => answers[el.id] = el.value);
-            try {
-                const module = await import('./js/firebase-service.js');
-                await module.CloudService.saveSubmissionSnapshot({
-                    studentID, studentName, examID,
-                    examTitle: "${examTitle}",
-                    answers,
-                    status: 'in-progress',
-                    lastUpdate: Date.now()
-                });
-            } catch(e) { console.log('שמירת snapshot נכשלה:', e); }
-        }
-
-        let _lastSavedAnswers = null;
-
         async function saveProgressToCloud(isSubmit = false, isAutoSave = false) {
             const btn = document.getElementById('btnCloudSave');
             if(btn && !isSubmit) { 
@@ -628,12 +458,6 @@ window.HTMLBuilder = {
 
             const answers = {};
             document.querySelectorAll('.student-ans').forEach(el => answers[el.id] = el.value);
-
-            // דילוג אם לא השתנה כלום מאז השמירה האחרונה
-            if (isAutoSave && _lastSavedAnswers !== null && JSON.stringify(answers) === _lastSavedAnswers) {
-                if(btn && !isSubmit) { btn.innerText = "💾 שמירה יזומה לענן"; btn.disabled = false; }
-                return;
-            }
 
             const studentID = localStorage.getItem('studentID') || document.getElementById('studentNameField').value || 'unknown_student';
             const examID = localStorage.getItem('activeExamID') || 'unknown_exam';
@@ -652,7 +476,6 @@ window.HTMLBuilder = {
             try {
                 const module = await import('./js/firebase-service.js');
                 await module.CloudService.saveSubmission(payload);
-                _lastSavedAnswers = JSON.stringify(answers); // עדכון קאש מקומי לאחר שמירה מוצלחת
                 if(btn && !isSubmit) {
                     btn.innerText = "✅ נשמר בהצלחה";
                     btn.style.background = "#27ae60";
@@ -699,7 +522,6 @@ window.HTMLBuilder = {
             if(document.fullscreenElement) document.exitFullscreen();
             clearInterval(timerInterval); document.getElementById('timerBadge').style.display='none';
             document.getElementById('highlighterTool').style.display='none';
-            document.getElementById('themeSwitcher').style.display='none';
             stopVoiceTyping();
             
             document.querySelectorAll('input,textarea').forEach(e=>{
