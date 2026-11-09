@@ -61,7 +61,10 @@
     </script>
 
     <script type="module">
-        import { CloudService } from './js/firebase-service.js?v=1527';
+        import { CloudService, LiveService } from './js/firebase-service.js?v=1527';
+        const REFRESH_MS = 40000; // קצב רענון גיבוי של רשימת המבחנים (40 שניות)
+        let examsUnsub = null;
+        let refreshTimer = null;
         
         // סימון שהענן נטען בהצלחה כדי לבטל את שגיאת הגיבוי
         window.firebaseLoaded = true;
@@ -87,7 +90,7 @@
                     document.getElementById('step1').style.display = 'none';
                     document.getElementById('step2').style.display = 'block';
                     document.getElementById('welcomeMsg').innerText = `שלום, ${student.name} 👋`;
-                    loadExams();
+                    startExamList();
                 } else {
                     alert("תעודת זהות לא נמצאה במערכת. אנא פנה למורה.");
                     btn.innerText = "המשך לבחירת מבחן";
@@ -102,30 +105,42 @@
         };
 
         // פונקציה לטעינת מבחנים פעילים
-        async function loadExams() {
+        function renderExams(exams) {
             const listContainer = document.getElementById('examsList');
-            listContainer.innerHTML = '<p style="text-align:center;">טוען מבחנים...</p>';
-            
-            try {
-                const exams = await CloudService.getActiveExams();
-                if (!exams || exams.length === 0) {
-                    listContainer.innerHTML = '<p style="text-align:center; color:#e74c3c;">אין מבחנים פעילים כרגע.</p>';
-                    return;
-                }
-
-                // סידור מהמבחן החדש לישן
-                exams.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
-
-                listContainer.innerHTML = exams.map(exam => `
-                    <div class="exam-item" onclick="startExam('${exam.id}')">
-                        <div class="exam-title">📄 ${exam.title || 'מבחן ללא שם'}</div>
-                        <div class="exam-date">פורסם בתאריך: ${exam.createdAt ? new Date(exam.createdAt).toLocaleDateString('he-IL') : 'לא ידוע'}</div>
-                    </div>
-                `).join('');
-            } catch (error) {
-                console.error("Load Exams Error:", error);
-                listContainer.innerHTML = '<p style="text-align:center; color:red;">שגיאה בטעינת המבחנים.</p>';
+            if (!exams || exams.length === 0) {
+                listContainer.innerHTML = '<p style="text-align:center; color:#e74c3c;">אין מבחנים פעילים כרגע.</p>';
+                return;
             }
+
+            // סידור מהמבחן החדש לישן
+            exams.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+
+            listContainer.innerHTML = exams.map(exam => `
+                <div class="exam-item" onclick="startExam('${exam.id}')">
+                    <div class="exam-title">📄 ${exam.title || 'מבחן ללא שם'}</div>
+                    <div class="exam-date">פורסם בתאריך: ${exam.createdAt ? new Date(exam.createdAt).toLocaleDateString('he-IL') : 'לא ידוע'}</div>
+                </div>
+            `).join('');
+        }
+
+        function showExamsError(error) {
+            console.error("Load Exams Error:", error);
+            document.getElementById('examsList').innerHTML = '<p style="text-align:center; color:red;">שגיאה בטעינת המבחנים.</p>';
+        }
+
+        // רענון גיבוי כל 40 שניות
+        async function refreshExams() {
+            try { renderExams(await CloudService.getActiveExams()); }
+            catch (error) { showExamsError(error); }
+        }
+
+        // האזנה בזמן אמת + רענון כל 40 שניות
+        function startExamList() {
+            document.getElementById('examsList').innerHTML = '<p style="text-align:center;">טוען מבחנים...</p>';
+            if (examsUnsub) examsUnsub();
+            examsUnsub = LiveService.watchExams(renderExams, showExamsError);
+            clearInterval(refreshTimer);
+            refreshTimer = setInterval(refreshExams, REFRESH_MS);
         }
 
         // פונקציית הפעלת המבחן מתוך הרשימה
