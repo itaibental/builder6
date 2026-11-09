@@ -147,7 +147,7 @@
     </div>
 
     <script type="module">
-        import { CloudService } from './js/firebase-service.js?v=1527';
+        import { CloudService, LiveService } from './js/firebase-service.js?v=1527';
 
         // --- skeleton rows למהירות טעינה ---
         function skeletonRows(cols) {
@@ -200,6 +200,7 @@
 
         // --- 1. תלמידים ---
         function renderStudents(students) {
+            saveCache('students', students || []);
             const tbody = document.querySelector('#studentsListTable tbody');
             const totalBadge = document.getElementById('totalStudentsBadge');
             if (!students || students.length === 0) { tbody.innerHTML = '<tr><td colspan="3" style="text-align:center;">אין תלמידים במאגר</td></tr>'; totalBadge.innerText = ''; return; }
@@ -219,6 +220,7 @@
 
         // --- 2. מבחנים ---
         function renderExams(exams) {
+            saveCache('exams', exams || []);
             const tbody = document.querySelector('#examsListTable tbody');
             if (!exams || exams.length === 0) { tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:30px;">אין מבחנים במאגר.</td></tr>'; return; }
             exams.sort((a, b) => (Number(b.createdAt) || 0) - (Number(a.createdAt) || 0));
@@ -270,6 +272,7 @@
 
         // --- 3. הגשות ---
         function renderSubmissions(subs) {
+            saveCache('submissions', subs || []);
             const tbody = document.querySelector('#submissionsTable tbody');
             if (!subs || subs.length === 0) { tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:30px;">אין הגשות כרגע במערכת.</td></tr>'; return; }
             subs.sort((a, b) => (Number(b.lastUpdate) || 0) - (Number(a.lastUpdate) || 0));
@@ -468,14 +471,22 @@
             } catch(e) { alert('שגיאה בשחזור: ' + e.message); }
         };
 
-        // --- טעינה מקבילית של כל הנתונים בבת אחת ---
-        window.onload = async () => {
-            // מציג skeleton מיד
-            document.querySelector('#studentsListTable tbody').innerHTML = skeletonRows(3);
-            document.querySelector('#examsListTable tbody').innerHTML = skeletonRows(4);
-            document.querySelector('#submissionsTable tbody').innerHTML = skeletonRows(6);
+        // --- מטמון מקומי: הצגה מיידית של מה שנטען בפעם הקודמת ---
+        const CACHE_PREFIX = 'adminCache_';
+        function saveCache(key, data) { try { localStorage.setItem(CACHE_PREFIX + key, JSON.stringify(data)); } catch (e) {} }
+        function loadCache(key) { try { const v = localStorage.getItem(CACHE_PREFIX + key); return v ? JSON.parse(v) : null; } catch (e) { return null; } }
+        function showTableError(selector, cols, error) {
+            document.querySelector(selector).innerHTML = `<tr><td colspan="${cols}" style="text-align:center; color:#c0392b;">שגיאה: ${error.message}</td></tr>`;
+        }
 
-            // מושך הכל במקביל
+        // --- טעינה, עדכון בזמן אמת ורענון כל 40 שניות ---
+        window.onload = async () => {
+            // 1. הצגה מיידית מהמטמון המקומי (אם יש), אחרת skeleton
+            const cs = loadCache('students'); if (cs) renderStudents(cs); else document.querySelector('#studentsListTable tbody').innerHTML = skeletonRows(3);
+            const ce = loadCache('exams'); if (ce) renderExams(ce); else document.querySelector('#examsListTable tbody').innerHTML = skeletonRows(5);
+            const cb = loadCache('submissions'); if (cb) renderSubmissions(cb); else document.querySelector('#submissionsTable tbody').innerHTML = skeletonRows(6);
+
+            // 2. טעינה מקבילית מהשרת
             try {
                 const { students, exams, submissions } = await CloudService.getDashboardData();
                 renderStudents(students);
@@ -483,9 +494,24 @@
                 renderSubmissions(submissions);
             } catch (err) {
                 console.error('Dashboard load error:', err);
-                // fallback: טעינה נפרדת
                 fetchStudentsList(); fetchExamsList(); fetchSubmissions();
             }
+
+            // 3. עדכון בזמן אמת: כל שינוי בשרת מופיע מיד
+            LiveService.watchStudents(renderStudents, e => showTableError('#studentsListTable tbody', 3, e));
+            LiveService.watchAllExams(renderExams, e => showTableError('#examsListTable tbody', 5, e));
+            LiveService.watchSubmissions(renderSubmissions, e => showTableError('#submissionsTable tbody', 6, e));
+
+            // 4. רענון גיבוי כל 40 שניות (שקט, בלי skeleton)
+            const REFRESH_MS = 40000;
+            setInterval(async () => {
+                try {
+                    const { students, exams, submissions } = await CloudService.getDashboardData();
+                    renderStudents(students);
+                    renderExams(exams);
+                    renderSubmissions(submissions);
+                } catch (err) { console.error('Refresh error:', err); }
+            }, REFRESH_MS);
         };
     </script>
 </body>
