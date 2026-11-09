@@ -1,6 +1,6 @@
 // firebase-service.js v1.5.27 — cache-bust
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-import { getFirestore, collection, addDoc, getDocs, doc, setDoc, deleteDoc, query, where, getDoc, orderBy, limit } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+import { getFirestore, collection, addDoc, getDocs, doc, setDoc, deleteDoc, query, where, getDoc, orderBy, limit, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
 // ---- Cache פנימי (30 שניות TTL) ----
 const CACHE_TTL = 30_000;
@@ -174,5 +174,44 @@ export const CloudService = {
             this.getSubmissions()
         ]);
         return { students, exams, submissions };
+    }
+};
+
+// ---- האזנה בזמן אמת (onSnapshot): השרת שולח עדכון מיד כשנתון משתנה ----
+// כל פונקציה מחזירה פונקציה לביטול ההאזנה. המטמון מתעדכן יחד עם כל עדכון.
+const mapExam = d => { const { htmlContent, state, ...light } = d.data(); return { id: d.id, ...light }; };
+const mapSubmission = d => { const { answers, parts, questions, htmlContent, ...light } = d.data(); return { id: d.id, ...light }; };
+
+export const LiveService = {
+    watchStudents(onData, onError) {
+        return onSnapshot(collection(db, "students"), snap => {
+            const result = snap.docs.map(d => d.data());
+            cacheSet('students', result);
+            onData(result);
+        }, onError);
+    },
+    // מבחנים פעילים בלבד (לתלמידים)
+    watchExams(onData, onError) {
+        const q = query(collection(db, "exams"), where("active", "==", true));
+        return onSnapshot(q, snap => {
+            const result = snap.docs.map(mapExam);
+            cacheSet('activeExams', result);
+            onData(result);
+        }, onError);
+    },
+    // כל המבחנים (למורה)
+    watchAllExams(onData, onError) {
+        return onSnapshot(collection(db, "exams"), snap => {
+            const result = snap.docs.map(mapExam);
+            cacheSet('allExams', result);
+            onData(result);
+        }, onError);
+    },
+    watchSubmissions(onData, onError) {
+        return onSnapshot(collection(db, "submissions"), snap => {
+            const result = snap.docs.map(mapSubmission);
+            cacheSet('submissions', result);
+            onData(result);
+        }, onError);
     }
 };
