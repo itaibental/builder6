@@ -116,7 +116,15 @@
     </div>
 
     <script type="module">
-        import { CloudService } from './js/firebase-service.js';
+        import { CloudService, LiveService } from './js/firebase-service.js';
+
+        // --- עזר: שמירה וטעינה מהירה מהזיכרון המקומי של הדפדפן ---
+        const CACHE_PREFIX = 'adminCache_';
+        function saveCache(key, data) { try { localStorage.setItem(CACHE_PREFIX + key, JSON.stringify(data)); } catch (e) {} }
+        function loadCache(key) { try { const v = localStorage.getItem(CACHE_PREFIX + key); return v ? JSON.parse(v) : null; } catch (e) { return null; } }
+        function showTableError(selector, cols, error) {
+            document.querySelector(selector).innerHTML = `<tr><td colspan="${cols}" style="text-align:center; color:#c0392b;">שגיאה: ${error.message}</td></tr>`;
+        }
 
         // הוספת וייבוא תלמידים
         window.addSingleStudent = async () => {
@@ -161,29 +169,31 @@
         function parseStudentData(jsonData) { return jsonData.map(row => ({ id: String(row['תעודת זהות'] || row['ID'] || row['ת"ז'] || '').trim(), name: String(row['שם'] || row['Name'] || '').trim() })).filter(s => s.id && s.name && s.id !== "undefined"); }
 
         // --- 1. מחיקת תלמידים ---
-        window.fetchStudentsList = async () => {
+        function renderStudents(students) {
             const tbody = document.querySelector('#studentsListTable tbody');
             const totalBadge = document.getElementById('totalStudentsBadge');
-            try {
-                const students = await CloudService.getStudents();
-                if (!students || students.length === 0) { tbody.innerHTML = '<tr><td colspan="3" style="text-align:center;">אין תלמידים במאגר</td></tr>'; totalBadge.innerText = ''; return; }
-                const validStudents = students.map(s => ({ id: s.id || '?', name: s.name || '?' }));
-                validStudents.sort((a, b) => String(a.name).localeCompare(String(b.name), 'he'));
-                totalBadge.innerText = `סה"כ מורשים במערכת: ${validStudents.length}`;
-                tbody.innerHTML = validStudents.map(s => `<tr><td>${s.name}</td><td>${s.id}</td><td style="text-align:center;"><button onclick="deleteStudentBtn('${s.id}')" class="btn-delete-small">מחק</button></td></tr>`).join('');
-            } catch (error) { tbody.innerHTML = `<tr><td colspan="3" style="text-align:center; color:#c0392b;">שגיאה: ${error.message}</td></tr>`; }
+            saveCache('students', students || []);
+            if (!students || students.length === 0) { tbody.innerHTML = '<tr><td colspan="3" style="text-align:center;">אין תלמידים במאגר</td></tr>'; totalBadge.innerText = ''; return; }
+            const validStudents = students.map(s => ({ id: s.id || '?', name: s.name || '?' }));
+            validStudents.sort((a, b) => String(a.name).localeCompare(String(b.name), 'he'));
+            totalBadge.innerText = `סה"כ מורשים במערכת: ${validStudents.length}`;
+            tbody.innerHTML = validStudents.map(s => `<tr><td>${s.name}</td><td>${s.id}</td><td style="text-align:center;"><button onclick="deleteStudentBtn('${s.id}')" class="btn-delete-small">מחק</button></td></tr>`).join('');
+        }
+
+        window.fetchStudentsList = async () => {
+            try { renderStudents(await CloudService.getStudents()); }
+            catch (error) { showTableError('#studentsListTable tbody', 3, error); }
         };
 
         window.deleteStudentBtn = async (id) => { if (confirm('האם אתה בטוח שברצונך למחוק תלמיד זה מהמאגר?')) { try { await CloudService.deleteStudent(id); fetchStudentsList(); } catch (e) { alert('שגיאה במחיקה'); } } };
 
         // --- 2. מחיקת מבחנים ---
-        window.fetchExamsList = async () => {
+        function renderExams(exams) {
             const tbody = document.querySelector('#examsListTable tbody');
-            try {
-                const exams = await CloudService.getActiveExams();
-                if (!exams || exams.length === 0) { tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:30px;">אין מבחנים מפורסמים במאגר.</td></tr>'; return; }
-                exams.sort((a, b) => (Number(b.createdAt) || 0) - (Number(a.createdAt) || 0));
-                tbody.innerHTML = exams.map(e => `
+            saveCache('exams', exams || []);
+            if (!exams || exams.length === 0) { tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:30px;">אין מבחנים מפורסמים במאגר.</td></tr>'; return; }
+            exams.sort((a, b) => (Number(b.createdAt) || 0) - (Number(a.createdAt) || 0));
+            tbody.innerHTML = exams.map(e => `
                     <tr>
                         <td><strong>${e.title || 'מבחן ללא שם'}</strong></td>
                         <td>${e.createdAt ? new Date(e.createdAt).toLocaleString('he-IL') : 'לא ידוע'}</td>
@@ -196,7 +206,11 @@
                         </td>
                     </tr>
                 `).join('');
-            } catch (error) { tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; color:#c0392b;">שגיאה: ${error.message}</td></tr>`; }
+        }
+
+        window.fetchExamsList = async () => {
+            try { renderExams(await CloudService.getActiveExams()); }
+            catch (error) { showTableError('#examsListTable tbody', 4, error); }
         };
 
         window.deleteExamBtn = async (id) => {
@@ -206,13 +220,12 @@
         };
 
         // --- 3. מחיקת הגשות תלמידים ---
-        window.fetchSubmissions = async () => {
+        function renderSubmissions(subs) {
             const tbody = document.querySelector('#submissionsTable tbody');
-            try {
-                const subs = await CloudService.getSubmissions();
-                if (!subs || subs.length === 0) return tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:30px;">אין הגשות כרגע במערכת.</td></tr>';
-                subs.sort((a, b) => (Number(b.lastUpdate) || 0) - (Number(a.lastUpdate) || 0));
-                tbody.innerHTML = subs.map(sub => {
+            saveCache('submissions', subs || []);
+            if (!subs || subs.length === 0) { tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:30px;">אין הגשות כרגע במערכת.</td></tr>'; return; }
+            subs.sort((a, b) => (Number(b.lastUpdate) || 0) - (Number(a.lastUpdate) || 0));
+            tbody.innerHTML = subs.map(sub => {
                     let statusLabel = 'במהלך פתרון', statusClass = 'status-progress';
                     if (sub.status === 'submitted') { statusLabel = 'הוגש סופית'; statusClass = 'status-submitted'; } 
                     else if (sub.status === 'graded') { statusLabel = 'נבדק ע"י מורה'; statusClass = 'status-submitted'; }
@@ -231,8 +244,12 @@
                             </div>
                         </td>
                     </tr>`;
-                }).join('');
-            } catch (error) { tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; color:#c0392b;">שגיאה: ${error.message}</td></tr>`; }
+            }).join('');
+        }
+
+        window.fetchSubmissions = async () => {
+            try { renderSubmissions(await CloudService.getSubmissions()); }
+            catch (error) { showTableError('#submissionsTable tbody', 6, error); }
         };
 
         window.deleteSubmissionBtn = async (subID) => {
@@ -246,7 +263,21 @@
             const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "תלמידים"); XLSX.writeFile(wb, "פורמט_תלמידים_לדוגמה.xlsx");
         };
 
-        window.onload = () => { fetchStudentsList(); fetchExamsList(); fetchSubmissions(); };
+        // --- 1. טעינה מהירה: מציגים מיד את מה שנשמר מהפעם הקודמת ---
+        const cachedStudents = loadCache('students'); if (cachedStudents) renderStudents(cachedStudents);
+        const cachedExams = loadCache('exams'); if (cachedExams) renderExams(cachedExams);
+        const cachedSubs = loadCache('submissions'); if (cachedSubs) renderSubmissions(cachedSubs);
+
+        // --- 2. עדכון בזמן אמת: כל שינוי בשרת מופיע מיד ---
+        LiveService.watchStudents(renderStudents, e => showTableError('#studentsListTable tbody', 3, e));
+        LiveService.watchExams(renderExams, e => showTableError('#examsListTable tbody', 4, e));
+        LiveService.watchSubmissions(renderSubmissions, e => showTableError('#submissionsTable tbody', 6, e));
+
+        // --- 3. רענון גיבוי כל 40 שניות ---
+        const REFRESH_MS = 40000;
+        function refreshAll() { fetchStudentsList(); fetchExamsList(); fetchSubmissions(); }
+        refreshAll();
+        setInterval(refreshAll, REFRESH_MS);
     </script>
 </body>
 </html>

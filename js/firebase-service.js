@@ -1,5 +1,5 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-import { getFirestore, collection, addDoc, getDocs, doc, setDoc, deleteDoc, query, where, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+import { getFirestore, collection, addDoc, getDocs, doc, setDoc, deleteDoc, query, where, getDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyALZyRVu3NaH4HaH8DbthySORQYLMdbTng",
@@ -61,5 +61,23 @@ export const CloudService = {
     // הפונקציה החדשה: מחיקת הגשה של תלמיד מהמאגר
     async deleteSubmission(subID) {
         return await deleteDoc(doc(db, "submissions", subID));
+    }
+};
+
+// האזנה בזמן אמת: השרת שולח עדכון מיד כשנתון משתנה.
+// כל פונקציה מחזירה פונקציה לביטול ההאזנה.
+export const LiveService = {
+    watchStudents(onData, onError) {
+        return onSnapshot(collection(db, "students"),
+            snap => onData(snap.docs.map(d => d.data())), onError);
+    },
+    watchExams(onData, onError) {
+        const q = query(collection(db, "exams"), where("active", "==", true));
+        return onSnapshot(q,
+            snap => onData(snap.docs.map(d => ({ id: d.id, ...d.data() }))), onError);
+    },
+    watchSubmissions(onData, onError) {
+        return onSnapshot(collection(db, "submissions"),
+            snap => onData(snap.docs.map(d => ({ id: d.id, ...d.data() }))), onError);
     }
 };
