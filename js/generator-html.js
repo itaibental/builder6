@@ -4,6 +4,9 @@
 window.HTMLBuilder = {
     build: function(studentName, questions, instructions, examTitle, logoData, solutionDataUrl, duration, unlockCodeHash, parts, teacherEmail, driveLink, projectData, theme) {
         
+        // הכנסת טקסט בטוחה לתוך סקריפט: גרשיים, שורות חדשות ו-</script> בכותרת לא ישברו את כל הסקריפט של המבחן
+        const jsString = (s) => JSON.stringify(String(s == null ? '' : s)).split('<').join('\\u003c').split(String.fromCharCode(8232)).join('\\u2028').split(String.fromCharCode(8233)).join('\\u2029');
+
         // --- מנגנוני הגנה למבחנים וטיוטות מגרסאות ישנות ---
         const safeInstructions = (typeof instructions === 'string') ? { general: instructions, parts: {} } : (instructions || { general: '', parts: {} });
         if (!safeInstructions.parts) safeInstructions.parts = {};
@@ -447,9 +450,10 @@ window.HTMLBuilder = {
             }
             isPlayingSound = !isPlayingSound;
         }
-        function isMobile(){ return /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent) || window.innerWidth <= 768; }
+        // מכשיר מגע (טלפון/טאבלט) לפי סוג המכשיר בלבד. רוחב חלון לא נחשב: חלון צר, זום או מסך מפוצל במחשב עדיין צריכים מסך מלא.
+        function isMobile(){ return /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1); }
         function startExamTimer(){
-            if(isPlayingSound) toggleSoundCheck(); 
+            if(isPlayingSound) toggleSoundCheck();
             if(!isMobile()) document.documentElement.requestFullscreen().catch(e=>console.log(e));
             document.getElementById('startScreen').style.display='none';
             document.getElementById('mainContainer').style.filter='none';
@@ -526,7 +530,7 @@ window.HTMLBuilder = {
                 studentID: studentID,
                 studentName: studentName,
                 examID: examID,
-                examTitle: "${examTitle}",
+                examTitle: ${jsString(examTitle)},
                 answers: answers,
                 status: isSubmit ? 'submitted' : 'in-progress',
                 lastUpdate: Date.now()
