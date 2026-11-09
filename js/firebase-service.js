@@ -4,6 +4,7 @@ import { getFirestore, collection, addDoc, getDocs, doc, setDoc, deleteDoc, quer
 
 // ---- Cache פנימי (30 שניות TTL) ----
 const CACHE_TTL = 30_000;
+const SUBMISSIONS_LIMIT = 100; // כמה הגשות אחרונות לטעון בדשבורד
 const _cache = {};
 function cacheGet(key) {
     const entry = _cache[key];
@@ -110,11 +111,12 @@ export const CloudService = {
         return await setDoc(doc(db, "exams", examID), { active: !currentActive }, { merge: true });
     },
     async getExam(examID) {
-        const contentRef = doc(db, "exams", examID, "content", "main");
-        const contentSnap = await getDoc(contentRef);
+        // שתי הקריאות במקביל (במקום אחת אחרי השנייה): חוסך סבב לשרת במבחנים ישנים
+        const [contentSnap, docSnap] = await Promise.all([
+            getDoc(doc(db, "exams", examID, "content", "main")),
+            getDoc(doc(db, "exams", examID))
+        ]);
         if (contentSnap.exists()) return contentSnap.data();
-        const docRef = doc(db, "exams", examID);
-        const docSnap = await getDoc(docRef);
         return docSnap.exists() ? docSnap.data() : null;
     },
     async getExamHtml(examID) {
@@ -133,7 +135,8 @@ export const CloudService = {
     async getSubmissions() {
         const cached = cacheGet('submissions');
         if (cached) return cached;
-        const querySnapshot = await getDocs(collection(db, "submissions"));
+        // רק ההגשות האחרונות: בלי הגבלה, הטעינה מאטה ככל שמצטברות הגשות
+        const querySnapshot = await getDocs(query(collection(db, "submissions"), orderBy("lastUpdate", "desc"), limit(SUBMISSIONS_LIMIT)));
         const result = querySnapshot.docs.map(d => {
             const { answers, parts, questions, htmlContent, ...light } = d.data();
             return { id: d.id, ...light };
@@ -208,7 +211,7 @@ export const LiveService = {
         }, onError);
     },
     watchSubmissions(onData, onError) {
-        return onSnapshot(collection(db, "submissions"), snap => {
+        return onSnapshot(query(collection(db, "submissions"), orderBy("lastUpdate", "desc"), limit(SUBMISSIONS_LIMIT)), snap => {
             const result = snap.docs.map(mapSubmission);
             cacheSet('submissions', result);
             onData(result);

@@ -486,25 +486,23 @@
             const ce = loadCache('exams'); if (ce) renderExams(ce); else document.querySelector('#examsListTable tbody').innerHTML = skeletonRows(5);
             const cb = loadCache('submissions'); if (cb) renderSubmissions(cb); else document.querySelector('#submissionsTable tbody').innerHTML = skeletonRows(6);
 
-            // 2. טעינה מקבילית מהשרת
-            try {
-                const { students, exams, submissions } = await CloudService.getDashboardData();
-                renderStudents(students);
-                renderExams(exams);
-                renderSubmissions(submissions);
-            } catch (err) {
-                console.error('Dashboard load error:', err);
-                fetchStudentsList(); fetchExamsList(); fetchSubmissions();
-            }
+            // 2. טעינה ראשונית + עדכון בזמן אמת באותה האזנה (בלי הורדה כפולה של הנתונים)
+            const loaded = { students: false, exams: false, submissions: false };
+            LiveService.watchStudents(d => { loaded.students = true; renderStudents(d); }, e => showTableError('#studentsListTable tbody', 3, e));
+            LiveService.watchAllExams(d => { loaded.exams = true; renderExams(d); }, e => showTableError('#examsListTable tbody', 5, e));
+            LiveService.watchSubmissions(d => { loaded.submissions = true; renderSubmissions(d); }, e => showTableError('#submissionsTable tbody', 6, e));
 
-            // 3. עדכון בזמן אמת: כל שינוי בשרת מופיע מיד
-            LiveService.watchStudents(renderStudents, e => showTableError('#studentsListTable tbody', 3, e));
-            LiveService.watchAllExams(renderExams, e => showTableError('#examsListTable tbody', 5, e));
-            LiveService.watchSubmissions(renderSubmissions, e => showTableError('#submissionsTable tbody', 6, e));
+            // 3. גיבוי: אם ההאזנה לא החזירה נתונים תוך 8 שניות, טוענים בדרך הרגילה
+            setTimeout(() => {
+                if (!loaded.students) fetchStudentsList();
+                if (!loaded.exams) fetchExamsList();
+                if (!loaded.submissions) fetchSubmissions();
+            }, 8000);
 
-            // 4. רענון גיבוי כל 40 שניות (שקט, בלי skeleton)
+            // 4. רענון גיבוי כל 40 שניות (שקט, בלי skeleton). מדלג כשהלשונית ברקע, כדי לא להוריד נתונים סתם
             const REFRESH_MS = 40000;
             setInterval(async () => {
+                if (document.hidden) return;
                 try {
                     const { students, exams, submissions } = await CloudService.getDashboardData();
                     renderStudents(students);

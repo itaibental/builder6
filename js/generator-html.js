@@ -331,6 +331,8 @@ window.HTMLBuilder = {
         </div>
         <script>
         let totalTime=${duration}*60,timerInterval,examStarted=false;
+        // טעינה מוקדמת של שירות הענן ברקע, כדי ששמירה ושחזור תשובות לא יחכו לה אחר כך
+        import('./js/firebase-service.js?v=1527').catch(function(){});
         function simpleHash(s){let h=0;for(let i=0;i<s.length;i++)h=(h<<5)-h+s.charCodeAt(i)|0;return h.toString();}
         window.onload = function() {
             if(document.body.dataset.status === 'submitted') {
